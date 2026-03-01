@@ -19,7 +19,9 @@ RoxamiStudio/
 │   ├── css/
 │   │   └── style.css       # 所有 CSS 样式
 │   ├── js/
-│   │   └── app.js          # 主 JavaScript 应用程序
+│   │   ├── app.js          # 核心应用程序逻辑
+│   │   └── tools/          # 工具模块目录
+│   │       └── 3d-converter.js  # 3D 转换器工具模块
 │   └── images/
 │       └── favicon.ico     # 网站图标
 ├── RoxamiStudio.sln      # Visual Studio 解决方案文件（空）
@@ -40,10 +42,16 @@ RoxamiStudio/
    - 向 `.tool-list` 添加 `.tool-item` 元素，设置 `data-tool="工具名称"`
    - 添加 `.tool-placeholder` div，设置对应的 `id="工具名称"`
 
-2. 在 `app.js` 中实现工具功能：
-   - 创建初始化函数 `initToolName()`
-   - 在 DOMContentLoaded 事件处理器中添加函数调用
-   - 对于较大的工具，考虑使用 `loadToolModule()` 模式
+2. 在 `wwwroot/js/tools/` 目录中创建工具模块文件：
+   - 创建 `工具名称.js` 文件
+   - 实现初始化函数 `initToolName()`（函数将在全局作用域中可用）
+   - 对于较大的工具，可将相关辅助函数封装在同一文件中
+
+3. 在 `index.html` 中引用工具模块：
+   - 在 `app.js` 之前添加 `<script src="wwwroot/js/tools/工具名称.js"></script>`
+
+4. 在 `app.js` 的 DOMContentLoaded 事件处理器中添加函数调用：
+   - 添加 `initToolName()` 调用（确保工具模块已加载）
 
 ### 样式指南
 - 使用 `:root` 和 `.light-theme` 中定义的 CSS 自定义属性（变量）
