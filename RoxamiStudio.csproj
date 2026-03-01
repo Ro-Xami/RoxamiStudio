@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <Nullable>enable</Nullable>
+    <IsWebProject>false</IsWebProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="CLAUDE.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
