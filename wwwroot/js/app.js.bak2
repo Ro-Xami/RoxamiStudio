@@ -1,5 +1,4 @@
 // Roxami Web Tools - Main Application JavaScript
-console.log('Roxami Web Tools JavaScript file loaded');
 
 // Translation system
 const translations = {
@@ -144,8 +143,6 @@ function updateCurrentToolName() {
 // Theme Toggle Module
 function initThemeToggle() {
     const themeToggleBtn = document.getElementById('theme-toggle-btn');
-    if (!themeToggleBtn) return;
-
     const themeIcon = themeToggleBtn.querySelector('i');
 
     // Check for saved theme preference or default to dark
@@ -180,8 +177,6 @@ function initThemeToggle() {
 // Sidebar Toggle Module
 function initSidebarToggle() {
     const sidebarToggle = document.getElementById('sidebar-toggle');
-    if (!sidebarToggle) return;
-
     const sidebarIcon = sidebarToggle.querySelector('i');
 
     // Check for saved sidebar state
@@ -362,12 +357,36 @@ function initJSONFormatter() {
     document.head.appendChild(style);
 }
 
-// Responsive Behavior Module - Desktop only
+// Responsive Behavior Module
 function initResponsiveBehavior() {
-    // For desktop only - ensure mobile classes are removed
-    document.body.classList.remove('sidebar-mobile-hidden');
+    const mobileBreakpoint = 1024;
 
-    // No mobile behavior needed
+    function checkScreenSize() {
+        if (window.innerWidth <= mobileBreakpoint) {
+            document.body.classList.add('sidebar-mobile-hidden');
+        } else {
+            document.body.classList.remove('sidebar-mobile-hidden');
+        }
+    }
+
+    // Initial check
+    checkScreenSize();
+
+    // Check on resize (with debounce)
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(checkScreenSize, 250);
+    });
+
+    // Close sidebar when clicking on mobile overlay (if we add one)
+    document.addEventListener('click', function(event) {
+        if (window.innerWidth <= mobileBreakpoint &&
+            !event.target.closest('.tool-sidebar') &&
+            !event.target.closest('.sidebar-toggle')) {
+            document.body.classList.add('sidebar-mobile-hidden');
+        }
+    });
 }
 
 // Notification System
@@ -658,6 +677,69 @@ vn 0.0 0.0 1.0
 
 f 1/1/1 2/2/2 3/3/3
 f 2/2/2 4/4/4 3/3/3`;
+        } else if (format === 'gltf') {
+            return JSON.stringify({
+                "asset": {
+                    "version": "2.0",
+                    "generator": "Roxami Web Tools"
+                },
+                "scenes": [
+                    {
+                        "nodes": [0]
+                    }
+                ],
+                "nodes": [
+                    {
+                        "mesh": 0
+                    }
+                ],
+                "meshes": [
+                    {
+                        "primitives": [
+                            {
+                                "attributes": {
+                                    "POSITION": 0
+                                },
+                                "indices": 1
+                            }
+                        ]
+                    }
+                ],
+                "accessors": [
+                    {
+                        "bufferView": 0,
+                        "componentType": 5126,
+                        "count": 4,
+                        "type": "VEC3",
+                        "max": [1.0, 1.0, 0.0],
+                        "min": [0.0, 0.0, 0.0]
+                    },
+                    {
+                        "bufferView": 1,
+                        "componentType": 5123,
+                        "count": 6,
+                        "type": "SCALAR"
+                    }
+                ],
+                "bufferViews": [
+                    {
+                        "buffer": 0,
+                        "byteOffset": 0,
+                        "byteLength": 48
+                    },
+                    {
+                        "buffer": 0,
+                        "byteOffset": 48,
+                        "byteLength": 12
+                    }
+                ],
+                "buffers": [
+                    {
+                        "byteLength": 60,
+                        "uri": "data:application/octet-stream;base64,AAAAAAAAAAAAAAAAAADwPwAAAAAAAABAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAAA="
+                    }
+                ]
+            }, null, 2);
         }
         return `Dummy ${format.toUpperCase()} file content`;
     }
@@ -697,21 +779,6 @@ f 2/2/2 4/4/4 3/3/3`;
 
         // Debug logging
         console.log('Exporting model to OBJ:', model);
-        // Note: Preview transformation (centering and scaling for display) is reversed during export
-        // to keep the OBJ coordinate system consistent with the original GLB file.
-        // This ensures the OBJ file's origin, rotation, and scale match the original GLB.
-
-        // Get preview transformation parameters to reverse the preview transformation
-        // Preview transform: v'' = scale * (v - center), where v is original GLB coordinate
-        // To get original coordinate: v = v''/scale + center
-        const previewCenter = model.userData?.previewCenter;
-        const previewScale = model.userData?.previewScale;
-        console.log('Preview transform params for OBJ export:', {
-            center: previewCenter,
-            scale: previewScale,
-            hasCenter: !!previewCenter,
-            hasScale: previewScale !== undefined
-        });
 
         try {
             let objContent = '# OBJ file exported from GLB by Roxami Web Tools\n';
@@ -759,17 +826,6 @@ f 2/2/2 4/4/4 3/3/3`;
                         for (let i = 0; i < positions.length; i += 3) {
                             positionVector.set(positions[i], positions[i+1], positions[i+2]);
                             positionVector.applyMatrix4(worldMatrix);
-
-                            // If this is the root object and has preview transformation,
-                            // apply inverse preview transform to restore original GLB coordinates
-                            if (!parentMatrix && previewCenter && previewScale !== undefined) {
-                                // Inverse preview transform: v = v''/scale + center
-                                // where v'' is the transformed vertex after preview transformation
-                                positionVector.x = positionVector.x / previewScale + previewCenter.x;
-                                positionVector.y = positionVector.y / previewScale + previewCenter.y;
-                                positionVector.z = positionVector.z / previewScale + previewCenter.z;
-                            }
-
                             vertices.push(`v ${positionVector.x} ${positionVector.y} ${positionVector.z}`);
                         }
                     }
@@ -1051,13 +1107,6 @@ f 2/2/2 4/4/4 3/3/3`;
                     currentModel.position.z = -center.z * scale;
                     currentModel.scale.set(scale, scale, scale);
 
-                    // Store preview transformation parameters for OBJ export
-                    // These will be used to reverse the preview transformation
-                    // and keep the original GLB coordinate system
-                    currentModel.userData.previewCenter = center.clone();
-                    currentModel.userData.previewScale = scale;
-                    console.log('Preview transform saved:', { center: center, scale: scale });
-
                     // Store references
                     currentScene = scene;
                     currentCamera = camera;
@@ -1309,7 +1358,7 @@ f 2/2/2 4/4/4 3/3/3`;
             const byteArray = new Uint8Array(byteNumbers);
             blob = new Blob([byteArray], { type: 'image/png' });
         } else {
-            // Model data (OBJ) is text
+            // Model data (OBJ/glTF) is text
             blob = new Blob([file.data], { type: 'text/plain' });
         }
 
