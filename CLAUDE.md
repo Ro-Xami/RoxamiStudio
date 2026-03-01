@@ -14,8 +14,8 @@ Roxami Studio 是一个基于静态网站的网页工具平台，目前提供 3D
 ## 项目结构
 ```
 RoxamiStudio/
+├── index.html          # 主 HTML 页面
 ├── wwwroot/                 # 主要网页内容
-│   ├── index.html          # 主 HTML 页面
 │   ├── css/
 │   │   └── style.css       # 所有 CSS 样式
 │   ├── js/
@@ -58,11 +58,11 @@ RoxamiStudio/
 - 使用事件委托处理工具切换
 
 ## 构建和部署
-这是一个静态网站 - 无需构建过程。只需将 `wwwroot` 目录部署到任何静态托管服务。
+这是一个静态网站 - 无需构建过程。只需将项目根目录部署到任何静态托管服务（需包含 index.html 和 wwwroot 目录）。
 
 ### 本地开发
-1. 直接在浏览器中打开 `wwwroot/index.html`，或
-2. 在 `wwwroot` 目录中使用本地 HTTP 服务器（例如 `python -m http.server`）
+1. 直接在浏览器中打开 `index.html`，或
+2. 在项目根目录中使用本地 HTTP 服务器（例如 `python -m http.server`）
 
 ### 部署选项
 - **GitHub Pages**: 推送到 `gh-pages` 分支或在主分支启用 Pages
