@@ -52,6 +52,15 @@
                             <p>将 GLB 转换为 OBJ</p>
                         </div>
                     </div>
+                    <div class="tool-item" data-tool="video-frame-extractor">
+                        <div class="tool-icon">
+                            <i class="fas fa-video"></i>
+                        </div>
+                        <div class="tool-info">
+                            <h3>视频帧提取器</h3>
+                            <p>从视频提取序列帧</p>
+                        </div>
+                    </div>
                 </div>
             </aside>
 
@@ -134,6 +143,87 @@
                             <p><strong>注意：</strong>大文件可能需要更长的处理时间。由于格式复杂性，不支持 FBX 转换。</p>
                         </div>
                     </div>
+
+                    <div class="tool-placeholder" id="video-frame-extractor">
+                        <div class="placeholder-header">
+                            <h2><i class="fas fa-video"></i> 视频帧提取器</h2>
+                            <p>从视频文件提取序列帧图片，支持自定义帧数和透明通道。</p>
+                        </div>
+                        <div class="tool-ui">
+                            <div class="input-section">
+                                <div class="section-header">
+                                    <h3>上传视频文件</h3>
+                                </div>
+                                <div class="file-upload-area">
+                                    <input type="file" id="video-file-input" accept="video/*" class="file-input">
+                                    <div class="upload-prompt">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <p>拖放视频文件或点击浏览</p>
+                                        <small>支持 MP4、WebM、AVI 等格式</small>
+                                    </div>
+                                    <div class="file-info" id="video-file-info" style="display: none;">
+                                        <p><strong>已选文件:</strong> <span id="video-file-name"></span></p>
+                                        <p><strong>文件大小:</strong> <span id="video-file-size"></span></p>
+                                        <p><strong>视频时长:</strong> <span id="video-duration">计算中...</span></p>
+                                    </div>
+                                </div>
+                                <div class="preview-section" id="video-preview-section" style="display: none;">
+                                    <h4>视频预览</h4>
+                                    <video id="video-preview" class="model-preview" controls>
+                                        <p>您的浏览器不支持视频播放。</p>
+                                    </video>
+                                </div>
+                            </div>
+                            <div class="output-section">
+                                <div class="section-header">
+                                    <h3>提取设置</h3>
+                                    <div class="filename-prefix-container">
+                                        <label for="frame-prefix-input">
+                                            <i class="fas fa-tag"></i> 文件名前缀:
+                                        </label>
+                                        <input type="text" id="frame-prefix-input" class="filename-prefix-input" placeholder="例如: my_video_" maxlength="50">
+                                    </div>
+                                    <div class="conversion-actions">
+                                        <div class="setting-row">
+                                            <label for="fps-input">
+                                                <i class="fas fa-tachometer-alt"></i> FPS (每秒帧数):
+                                            </label>
+                                            <input type="number" id="fps-input" min="1" max="120" value="24" class="number-input">
+                                            <small>1-120 fps</small>
+                                        </div>
+                                        <div class="setting-row" id="frame-calc-row" style="display: none;">
+                                            <label>
+                                                <i class="fas fa-calculator"></i> 计算总帧数:
+                                            </label>
+                                            <span id="total-frames-calc">0</span>
+                                            <small>根据视频时长和FPS计算</small>
+                                        </div>
+                                        <button class="small-btn" id="extract-frames-btn">
+                                            <i class="fas fa-play"></i> 提取帧
+                                        </button>
+                                        <button class="small-btn" id="download-all-frames-btn" disabled>
+                                            <i class="fas fa-download"></i> 全部下载
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="conversion-output">
+                                    <div class="output-files" id="frames-output-files">
+                                        <p class="no-output">暂无提取输出。</p>
+                                    </div>
+                                    <div class="download-actions">
+                                        <button class="small-btn" id="clear-frames-btn">
+                                            <i class="fas fa-trash"></i> 清空列表
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tool-info-box">
+                            <h4><i class="fas fa-info-circle"></i> 关于视频帧提取器</h4>
+                            <p>此工具从视频文件中提取序列帧图片。您可以自定义提取的帧数，导出的图片为 PNG 格式并保留透明通道（如果视频支持）。所有处理均在您的浏览器中完成，视频数据不会发送到服务器。</p>
+                            <p><strong>注意：</strong>处理时间取决于视频长度和提取帧数。支持大多数现代视频格式。</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="content-footer">
@@ -159,6 +249,7 @@
 
     <!-- JavaScript -->
     <script src="wwwroot/js/tools/3d-converter.js"></script>
+    <script src="wwwroot/js/tools/video-frame-extractor.js"></script>
     <script src="wwwroot/js/app.js"></script>
 </body>
 </html>

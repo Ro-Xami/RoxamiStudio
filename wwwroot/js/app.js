@@ -43,6 +43,30 @@ const translations = {
         'threeDConverterInfo1': '此工具将 GLB 文件转换为 OBJ 格式。同时从 GLB 文件中提取嵌入的纹理。所有处理都在您的浏览器中使用 Three.js 库完成。',
         'threeDConverterInfo2': '注意：大文件可能需要更长时间处理。由于格式复杂性，不支持 FBX 转换。',
 
+        // Video Frame Extractor tool
+        'videoFrameExtractor': '视频帧提取器',
+        'videoFrameExtractorDesc': '从视频提取序列帧',
+        'videoFrameExtractorTitle': '视频帧提取器',
+        'videoFrameExtractorSubtitle': '从视频文件提取序列帧图片，支持自定义帧数和透明通道。',
+        'uploadVideo': '上传视频文件',
+        'videoDragDropPrompt': '拖放视频文件或点击浏览',
+        'videoFormats': '支持 MP4、WebM、AVI 等格式',
+        'videoSelectedFile': '已选文件：',
+        'videoFileSize': '文件大小：',
+        'videoDuration': '视频时长：',
+        'videoPreview': '视频预览',
+        'extractionSettings': '提取设置',
+        'fps': 'FPS (每秒帧数)：',
+        'fpsPlaceholder': '例如：24',
+        'totalFramesCalc': '计算总帧数：',
+        'extractFrames': '提取帧',
+        'downloadAllFrames': '全部下载',
+        'clearFrames': '清空列表',
+        'noFramesOutput': '暂无提取输出。',
+        'aboutVideoFrameExtractor': '关于视频帧提取器',
+        'videoFrameExtractorInfo1': '此工具从视频文件中提取序列帧图片。您可以设置 FPS（每秒帧数），工具会根据视频时长自动计算总帧数。导出的图片为 PNG 格式并保留透明通道（如果视频支持）。所有处理均在您的浏览器中完成，视频数据不会发送到服务器。',
+        'videoFrameExtractorInfo2': '注意：处理时间取决于视频长度和设置的 FPS。支持大多数现代视频格式。',
+
         // Footer
         'footerText': '所有处理均在您的浏览器中进行。数据不会发送到服务器。',
         'copyright': '© 2026 Roxami Studio',
@@ -56,7 +80,8 @@ const translations = {
 // List of proper nouns that should not be translated (case insensitive)
 const properNouns = [
     'JSON', 'Base64', 'URL', 'MD5', 'SHA', 'GLB', 'OBJ', 'FBX',
-    'Three.js', 'Roxami', 'GitHub', 'HTML', 'CSS', 'JavaScript'
+    'Three.js', 'Roxami', 'GitHub', 'HTML', 'CSS', 'JavaScript',
+    'MP4', 'WebM', 'AVI', 'PNG'
 ];
 
 // Current language
@@ -84,6 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initSidebarToggle();
     initResponsiveBehavior();
     init3DConverter();
+    initVideoFrameExtractor();
     initLanguageToggle();
 
     // Set initial active tool
@@ -125,6 +151,9 @@ function initToolSwitcher() {
                     switch (toolId) {
                         case '3d-converter':
                             apply3DConverterTranslations(langData);
+                            break;
+                        case 'video-frame-extractor':
+                            applyVideoFrameExtractorTranslations(langData);
                             break;
                     }
                 }
@@ -416,6 +445,9 @@ function applyTranslations(language) {
         if (toolId === '3d-converter' && titleElement && descElement) {
             titleElement.textContent = preserveProperNouns(langData.threeDConverter);
             descElement.textContent = preserveProperNouns(langData.threeDConverterDesc);
+        } else if (toolId === 'video-frame-extractor' && titleElement && descElement) {
+            titleElement.textContent = preserveProperNouns(langData.videoFrameExtractor);
+            descElement.textContent = preserveProperNouns(langData.videoFrameExtractorDesc);
         }
     });
 
@@ -447,6 +479,8 @@ function applyTranslations(language) {
 
         if (toolId === '3d-converter') {
             apply3DConverterTranslations(langData);
+        } else if (toolId === 'video-frame-extractor') {
+            applyVideoFrameExtractorTranslations(langData);
         }
     }
 
@@ -563,6 +597,98 @@ function apply3DConverterTranslations(langData) {
     }
 }
 
+function applyVideoFrameExtractorTranslations(langData) {
+    const placeholderHeader = document.querySelector('#video-frame-extractor .placeholder-header');
+    if (placeholderHeader) {
+        const h2 = placeholderHeader.querySelector('h2');
+        const p = placeholderHeader.querySelector('p:first-of-type');
+        if (h2) h2.innerHTML = `<i class="fas fa-video"></i> ${preserveProperNouns(langData.videoFrameExtractorTitle)}`;
+        if (p) p.textContent = preserveProperNouns(langData.videoFrameExtractorSubtitle);
+    }
+
+    const inputSection = document.querySelector('#video-frame-extractor .input-section');
+    if (inputSection) {
+        const h3 = inputSection.querySelector('.section-header h3');
+        if (h3) h3.textContent = preserveProperNouns(langData.uploadVideo);
+
+        const uploadPrompt = inputSection.querySelector('.upload-prompt p');
+        if (uploadPrompt) uploadPrompt.textContent = preserveProperNouns(langData.videoDragDropPrompt);
+
+        const videoFormats = inputSection.querySelector('.upload-prompt small');
+        if (videoFormats) videoFormats.textContent = preserveProperNouns(langData.videoFormats);
+
+        const fileInfoLabels = inputSection.querySelectorAll('.file-info p strong');
+        if (fileInfoLabels.length >= 3) {
+            fileInfoLabels[0].textContent = preserveProperNouns(langData.videoSelectedFile);
+            fileInfoLabels[1].textContent = preserveProperNouns(langData.videoFileSize);
+            fileInfoLabels[2].textContent = preserveProperNouns(langData.videoDuration);
+        }
+
+        const previewTitle = inputSection.querySelector('.preview-section h4');
+        if (previewTitle) previewTitle.textContent = preserveProperNouns(langData.videoPreview);
+    }
+
+    const outputSection = document.querySelector('#video-frame-extractor .output-section');
+    if (outputSection) {
+        const h3 = outputSection.querySelector('.section-header h3');
+        if (h3) h3.textContent = preserveProperNouns(langData.extractionSettings);
+
+        // Update filename prefix label and placeholder
+        const prefixLabel = outputSection.querySelector('.filename-prefix-container label');
+        if (prefixLabel && langData.filenamePrefix) {
+            prefixLabel.innerHTML = `<i class="fas fa-tag"></i> ${preserveProperNouns(langData.filenamePrefix)}`;
+        }
+
+        const prefixInput = outputSection.querySelector('#frame-prefix-input');
+        if (prefixInput && langData.filenamePrefixPlaceholder) {
+            prefixInput.placeholder = preserveProperNouns(langData.filenamePrefixPlaceholder);
+        }
+
+        // Update FPS input placeholder
+        const fpsInput = outputSection.querySelector('#fps-input');
+        if (fpsInput && langData.fpsPlaceholder) {
+            fpsInput.placeholder = preserveProperNouns(langData.fpsPlaceholder);
+        }
+
+        // Update FPS label
+        const fpsLabel = outputSection.querySelector('.setting-row:first-of-type label');
+        if (fpsLabel && langData.fps) {
+            fpsLabel.innerHTML = `<i class="fas fa-tachometer-alt"></i> ${preserveProperNouns(langData.fps)}`;
+        }
+
+        // Update total frames calculation label
+        const totalFramesLabel = outputSection.querySelector('#frame-calc-row label');
+        if (totalFramesLabel && langData.totalFramesCalc) {
+            totalFramesLabel.innerHTML = `<i class="fas fa-calculator"></i> ${preserveProperNouns(langData.totalFramesCalc)}`;
+        }
+
+        const buttons = outputSection.querySelectorAll('.conversion-actions .small-btn');
+        if (buttons.length >= 2) {
+            buttons[0].innerHTML = `<i class="fas fa-play"></i> ${preserveProperNouns(langData.extractFrames)}`;
+            buttons[1].innerHTML = `<i class="fas fa-download"></i> ${preserveProperNouns(langData.downloadAllFrames)}`;
+        }
+
+        const clearFramesBtn = outputSection.querySelector('#clear-frames-btn');
+        if (clearFramesBtn && langData.clearFrames) {
+            clearFramesBtn.innerHTML = `<i class="fas fa-trash"></i> ${preserveProperNouns(langData.clearFrames)}`;
+        }
+
+        const noOutput = outputSection.querySelector('.no-output');
+        if (noOutput) noOutput.textContent = preserveProperNouns(langData.noFramesOutput);
+    }
+
+    const infoBox = document.querySelector('#video-frame-extractor .tool-info-box');
+    if (infoBox) {
+        const h4 = infoBox.querySelector('h4');
+        const paragraphs = infoBox.querySelectorAll('p');
+        if (h4) h4.innerHTML = `<i class="fas fa-info-circle"></i> ${preserveProperNouns(langData.aboutVideoFrameExtractor)}`;
+        if (paragraphs.length >= 2) {
+            paragraphs[0].textContent = preserveProperNouns(langData.videoFrameExtractorInfo1);
+            paragraphs[1].innerHTML = `<strong>${preserveProperNouns('Note:')}</strong> ${preserveProperNouns(langData.videoFrameExtractorInfo2)}`;
+        }
+    }
+}
+
 // Helper function to preserve proper nouns in translated text
 function preserveProperNouns(text) {
     if (currentLanguage === 'en') return text; // No need to process for English
@@ -609,6 +735,9 @@ function updateCurrentToolName() {
                     break;
                 case '3d-converter':
                     toolName = langData.threeDConverter;
+                    break;
+                case 'video-frame-extractor':
+                    toolName = langData.videoFrameExtractor;
                     break;
                 default:
                     toolName = 'Unknown Tool';

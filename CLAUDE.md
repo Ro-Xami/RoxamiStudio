@@ -1,7 +1,7 @@
 # Roxami Studio - Claude Code Assistant 指令
 
 ## 项目概述
-Roxami Studio 是一个基于静态网站的网页工具平台，目前提供 3D 模型转换工具。应用采用模块化设计，支持轻松扩展新工具。
+Roxami Studio 是一个基于静态网站的网页工具平台，目前提供 3D 模型转换和视频帧提取工具。应用采用模块化设计，支持轻松扩展新工具。
 
 ## 技术栈
 - **前端**: 纯 HTML5、CSS3 和原生 JavaScript（无框架）
@@ -21,7 +21,8 @@ RoxamiStudio/
 │   ├── js/
 │   │   ├── app.js          # 核心应用程序逻辑
 │   │   └── tools/          # 工具模块目录
-│   │       └── 3d-converter.js  # 3D 转换器工具模块
+│   │       ├── 3d-converter.js  # 3D 转换器工具模块
+│   │       └── video-frame-extractor.js  # 视频帧提取器工具模块
 │   └── images/
 │       └── favicon.ico     # 网站图标
 ├── RoxamiStudio.sln      # Visual Studio 解决方案文件（空）
@@ -31,6 +32,7 @@ RoxamiStudio/
 ## 主要功能
 - **工具切换器**: 点击侧边栏项目在不同工具间切换
 - **3D 模型转换器**: 将 GLB 格式模型文件转换为 OBJ 格式，支持纹理提取和 3D 预览
+- **视频帧提取器**: 从视频文件中提取序列帧图片，支持自定义FPS（每秒帧数）和透明通道
 - **主题切换**: 深色/浅色主题，支持状态持久化
 - **响应式设计**: 支持桌面和移动设备
 - **本地处理**: 所有文件处理均在浏览器中完成，数据不发送到服务器
@@ -88,9 +90,10 @@ RoxamiStudio/
 - 在现代浏览器中进行手动测试（Chrome、Firefox、Edge）
 - 测试响应式布局和主题切换功能
 - 验证 3D 转换器的文件上传、转换和下载功能
+- 验证视频帧提取器的视频上传、帧提取和图片下载功能
 
 ## 浏览器支持
-支持现代浏览器（Chrome 90+、Firefox 88+、Edge 90+）。需要支持 ES6+ 和 WebGL。
+支持现代浏览器（Chrome 90+、Firefox 88+、Edge 90+）。需要支持 ES6+、WebGL 和 HTML5 Video/Canvas API。
 
 ## 安全考虑
 - 所有文件处理均在客户端完成，数据不发送到服务器
@@ -106,6 +109,9 @@ RoxamiStudio/
 - 支持更多 3D 文件格式（FBX、STL、PLY）
 - 添加快捷键和工具设置
 - 实现 PWA 功能（离线支持）
+- 添加更多视频处理工具（视频压缩、格式转换、GIF 生成）
+- 支持批量视频处理
+- 添加视频编辑功能（裁剪、合并、添加水印）
 
 ## Claude Code Assistant 注意事项
 - 专注于增强现有工具或添加新工具
