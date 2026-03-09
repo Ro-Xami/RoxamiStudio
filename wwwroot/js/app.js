@@ -67,6 +67,30 @@ const translations = {
         'videoFrameExtractorInfo1': '此工具从视频文件中提取序列帧图片。您可以设置 FPS（每秒帧数），工具会根据视频时长自动计算总帧数。导出的图片为 PNG 格式并保留透明通道（如果视频支持）。所有处理均在您的浏览器中完成，视频数据不会发送到服务器。',
         'videoFrameExtractorInfo2': '注意：处理时间取决于视频长度和设置的 FPS。支持大多数现代视频格式。',
 
+        // File Renamer tool
+        'fileRenamer': '文件重命名工具',
+        'fileRenamerDesc': '批量重命名文件',
+        'fileRenamerTitle': '文件重命名工具',
+        'fileRenamerSubtitle': '批量重命名文件夹中的文件，支持按名称或时间排序。',
+        'selectFolder': '选择文件夹',
+        'folderDragDropPrompt': '选择文件夹',
+        'folderFormats': '将处理文件夹中的所有文件',
+        'selectedFolder': '已选文件夹：',
+        'fileCount': '文件数量：',
+        'totalSize': '总大小：',
+        'fileListPreview': '文件列表预览',
+        'renameSettings': '重命名设置',
+        'sortMethod': '排序方式：',
+        'startIndex': '起始编号：',
+        'digits': '编号位数：',
+        'previewRename': '预览重命名',
+        'executeRename': '执行重命名',
+        'downloadRenamed': '下载重命名后文件',
+        'noRenameOutput': '暂无重命名结果。',
+        'aboutFileRenamer': '关于文件重命名工具',
+        'fileRenamerInfo1': '此工具批量重命名文件夹中的文件。您可以按照文件名或修改时间对文件进行排序，并按照指定前缀和编号格式重命名文件。所有处理均在您的浏览器中完成，文件数据不会发送到服务器。',
+        'fileRenamerInfo2': '注意：由于浏览器安全限制，重命名操作仅生成重命名后的文件下载，不会修改原始文件。请下载重命名后的文件到本地。',
+
         // Footer
         'footerText': '所有处理均在您的浏览器中进行。数据不会发送到服务器。',
         'copyright': '© 2026 Roxami Studio',
@@ -110,6 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initResponsiveBehavior();
     init3DConverter();
     initVideoFrameExtractor();
+    initFileRenamer();
     initLanguageToggle();
 
     // Set initial active tool
@@ -154,6 +179,9 @@ function initToolSwitcher() {
                             break;
                         case 'video-frame-extractor':
                             applyVideoFrameExtractorTranslations(langData);
+                            break;
+                        case 'file-renamer':
+                            applyFileRenamerTranslations(langData);
                             break;
                     }
                 }
@@ -481,6 +509,8 @@ function applyTranslations(language) {
             apply3DConverterTranslations(langData);
         } else if (toolId === 'video-frame-extractor') {
             applyVideoFrameExtractorTranslations(langData);
+        } else if (toolId === 'file-renamer') {
+            applyFileRenamerTranslations(langData);
         }
     }
 
@@ -738,6 +768,9 @@ function updateCurrentToolName() {
                     break;
                 case 'video-frame-extractor':
                     toolName = langData.videoFrameExtractor;
+                    break;
+                case 'file-renamer':
+                    toolName = langData.fileRenamer;
                     break;
                 default:
                     toolName = 'Unknown Tool';

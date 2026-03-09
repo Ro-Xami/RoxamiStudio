@@ -61,6 +61,15 @@
                             <p>从视频提取序列帧</p>
                         </div>
                     </div>
+                    <div class="tool-item" data-tool="file-renamer">
+                        <div class="tool-icon">
+                            <i class="fas fa-file-signature"></i>
+                        </div>
+                        <div class="tool-info">
+                            <h3>文件重命名工具</h3>
+                            <p>批量重命名文件</p>
+                        </div>
+                    </div>
                 </div>
             </aside>
 
@@ -224,6 +233,103 @@
                             <p><strong>注意：</strong>处理时间取决于视频长度和提取帧数。支持大多数现代视频格式。</p>
                         </div>
                     </div>
+
+                    <div class="tool-placeholder" id="file-renamer">
+                        <div class="placeholder-header">
+                            <h2><i class="fas fa-file-signature"></i> 文件重命名工具</h2>
+                            <p>批量重命名文件夹中的文件，支持按名称或时间排序。</p>
+                        </div>
+                        <div class="tool-ui">
+                            <div class="input-section">
+                                <div class="section-header">
+                                    <h3>选择文件夹</h3>
+                                </div>
+                                <div class="file-upload-area">
+                                    <input type="file" id="folder-input" webkitdirectory multiple class="file-input">
+                                    <div class="upload-prompt">
+                                        <i class="fas fa-folder-open"></i>
+                                        <p>选择文件夹或拖放文件夹</p>
+                                        <small>将处理文件夹中的所有文件</small>
+                                    </div>
+                                    <div class="file-info" id="folder-info" style="display: none;">
+                                        <p><strong>已选文件夹:</strong> <span id="folder-name"></span></p>
+                                        <p><strong>文件数量:</strong> <span id="file-count">0</span></p>
+                                        <p><strong>总大小:</strong> <span id="total-size">0 Bytes</span></p>
+                                    </div>
+                                </div>
+                                <div class="preview-section" id="folder-preview-section" style="display: none;">
+                                    <h4>文件列表预览</h4>
+                                    <div class="file-list-preview" id="file-list-preview">
+                                        <div class="file-list-header">
+                                            <span>文件名</span>
+                                            <span>大小</span>
+                                            <span>修改时间</span>
+                                        </div>
+                                        <div class="file-list-content" id="file-list-content">
+                                            <!-- 文件列表将动态填充 -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="output-section">
+                                <div class="section-header">
+                                    <h3>重命名设置</h3>
+                                    <div class="filename-prefix-container">
+                                        <label for="rename-prefix-input">
+                                            <i class="fas fa-tag"></i> 文件名前缀:
+                                        </label>
+                                        <input type="text" id="rename-prefix-input" class="filename-prefix-input" placeholder="例如: image_" maxlength="50">
+                                    </div>
+                                    <div class="conversion-actions">
+                                        <div class="setting-row">
+                                            <label for="sort-method-select">
+                                                <i class="fas fa-sort"></i> 排序方式:
+                                            </label>
+                                            <select id="sort-method-select" class="select-input">
+                                                <option value="name-asc">名称升序 (A-Z)</option>
+                                                <option value="name-desc">名称降序 (Z-A)</option>
+                                                <option value="time-asc">时间升序 (旧→新)</option>
+                                                <option value="time-desc">时间降序 (新→旧)</option>
+                                            </select>
+                                        </div>
+                                        <div class="setting-row">
+                                            <label for="start-index-input">
+                                                <i class="fas fa-hashtag"></i> 起始编号:
+                                            </label>
+                                            <input type="number" id="start-index-input" min="0" value="0" class="number-input">
+                                            <small>从 0 开始</small>
+                                        </div>
+                                        <div class="setting-row">
+                                            <label for="digits-input">
+                                                <i class="fas fa-digit"></i> 编号位数:
+                                            </label>
+                                            <input type="number" id="digits-input" min="1" max="6" value="3" class="number-input">
+                                            <small>例如: 3 → 001, 002</small>
+                                        </div>
+                                        <button class="small-btn" id="preview-rename-btn">
+                                            <i class="fas fa-eye"></i> 预览重命名
+                                        </button>
+                                        <button class="small-btn" id="execute-rename-btn" disabled>
+                                            <i class="fas fa-play"></i> 执行重命名
+                                        </button>
+                                        <button class="small-btn" id="download-renamed-btn" disabled>
+                                            <i class="fas fa-download"></i> 下载重命名后文件
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="conversion-output">
+                                    <div class="output-files" id="rename-output-files">
+                                        <p class="no-output">暂无重命名结果。</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tool-info-box">
+                            <h4><i class="fas fa-info-circle"></i> 关于文件重命名工具</h4>
+                            <p>此工具批量重命名文件夹中的文件。您可以按照文件名或修改时间对文件进行排序，并按照指定前缀和编号格式重命名文件。所有处理均在您的浏览器中完成，文件数据不会发送到服务器。</p>
+                            <p><strong>注意：</strong>由于浏览器安全限制，重命名操作仅生成重命名后的文件下载，不会修改原始文件。请下载重命名后的文件到本地。</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="content-footer">
@@ -250,6 +356,7 @@
     <!-- JavaScript -->
     <script src="wwwroot/js/tools/3d-converter.js"></script>
     <script src="wwwroot/js/tools/video-frame-extractor.js"></script>
+    <script src="wwwroot/js/tools/file-renamer.js"></script>
     <script src="wwwroot/js/app.js"></script>
 </body>
 </html>
