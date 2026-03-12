@@ -32,6 +32,7 @@
             </div>
         </header>
 
+        
         <div class="main-content">
             <!-- Sidebar - Tool Panel -->
             <aside class="tool-sidebar">
@@ -68,6 +69,15 @@
                         <div class="tool-info">
                             <h3>文件重命名工具</h3>
                             <p>批量重命名文件</p>
+                        </div>
+                    </div>
+                    <div class="tool-item" data-tool="sprite-sheet-tool">
+                        <div class="tool-icon">
+                            <i class="fas fa-th"></i>
+                        </div>
+                        <div class="tool-info">
+                            <h3>合并/拆分序列图集</h3>
+                            <p>合并多张序列图为图集，或拆分图集为序列图</p>
                         </div>
                     </div>
                 </div>
@@ -330,6 +340,164 @@
                             <p><strong>注意：</strong>由于浏览器安全限制，重命名操作仅生成重命名后的文件下载，不会修改原始文件。请下载重命名后的文件到本地。</p>
                         </div>
                     </div>
+
+                    <!-- Sprite Sheet Combiner/Splitter Tool -->
+                    <div class="tool-placeholder" id="sprite-sheet-tool">
+                        <div class="placeholder-header">
+                            <h2><i class="fas fa-th"></i> 合并/拆分序列图集</h2>
+                            <p>合并多张序列图为一张序列图集，或拆分单张序列图集为多张序列图。</p>
+                        </div>
+                        <div class="tool-ui">
+                            <!-- 合并序列图 -->
+                            <div class="input-section">
+                                <div class="section-header">
+                                    <h3>合并序列图</h3>
+                                </div>
+                                <div class="file-upload-area">
+                                    <input type="file" id="merge-images-input" accept="image/*" multiple class="file-input">
+                                    <div class="upload-prompt">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <p>拖放多张序列图或点击浏览</p>
+                                        <small>支持PNG格式，保留透明通道</small>
+                                    </div>
+                                    <div class="file-info" id="merge-file-info" style="display: none;">
+                                        <p><strong>已选文件:</strong> <span id="merge-file-count">0</span> 张</p>
+                                        <p><strong>总大小:</strong> <span id="merge-total-size">0 Bytes</span></p>
+                                    </div>
+                                </div>
+                                <div class="preview-section" id="merge-preview-section" style="display: none;">
+                                    <h4>序列图预览</h4>
+                                    <div class="image-preview-container" id="merge-preview-container">
+                                        <!-- 图片预览将动态填充 -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="output-section">
+                                <div class="section-header">
+                                    <h3>合并设置</h3>
+                                    <div class="filename-prefix-container">
+                                        <label for="merge-output-name-input">
+                                            <i class="fas fa-tag"></i> 输出文件名:
+                                        </label>
+                                        <input type="text" id="merge-output-name-input" class="filename-prefix-input" placeholder="例如: sprite_sheet" maxlength="50">
+                                    </div>
+                                    <div class="conversion-actions">
+                                        <div class="setting-row">
+                                            <label for="merge-rows-input">
+                                                <i class="fas fa-border-all"></i> 行数:
+                                            </label>
+                                            <input type="number" id="merge-rows-input" min="1" max="100" value="1" class="number-input">
+                                            <small>每列图片数自动计算</small>
+                                        </div>
+                                        <div class="setting-row">
+                                            <label for="merge-direction-select">
+                                                <i class="fas fa-arrows-alt"></i> 排列方向:
+                                            </label>
+                                            <select id="merge-direction-select" class="select-input">
+                                                <option value="lr-tb">从左至右，从上至下</option>
+                                                <option value="rl-tb">从右至左，从上至下</option>
+                                                <option value="lr-bt">从左至右，从下至上</option>
+                                                <option value="rl-bt">从右至左，从下至上</option>
+                                            </select>
+                                        </div>
+                                        <button class="small-btn" id="merge-images-btn">
+                                            <i class="fas fa-object-group"></i> 合并序列图
+                                        </button>
+                                        <button class="small-btn" id="download-merged-btn" disabled>
+                                            <i class="fas fa-download"></i> 下载合并图集
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="conversion-output">
+                                    <div class="output-files" id="merge-output-files">
+                                        <p class="no-output">暂无合并输出。</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 拆分序列图集 -->
+                        <div class="tool-ui" style="margin-top: var(--spacing-xxl);">
+                            <div class="input-section">
+                                <div class="section-header">
+                                    <h3>拆分序列图集</h3>
+                                </div>
+                                <div class="file-upload-area">
+                                    <input type="file" id="split-sheet-input" accept="image/*" class="file-input">
+                                    <div class="upload-prompt">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <p>拖放序列图集文件或点击浏览</p>
+                                        <small>支持PNG格式，保留透明通道</small>
+                                    </div>
+                                    <div class="file-info" id="split-file-info" style="display: none;">
+                                        <p><strong>已选文件:</strong> <span id="split-file-name"></span></p>
+                                        <p><strong>文件大小:</strong> <span id="split-file-size"></span></p>
+                                    </div>
+                                </div>
+                                <div class="preview-section" id="split-preview-section" style="display: none;">
+                                    <h4>序列图集预览</h4>
+                                    <div class="model-preview" id="split-preview-container">
+                                        <img id="split-preview-image" src="" alt="序列图集预览" style="max-width: 100%;">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="output-section">
+                                <div class="section-header">
+                                    <h3>拆分设置</h3>
+                                    <div class="filename-prefix-container">
+                                        <label for="split-output-prefix-input">
+                                            <i class="fas fa-tag"></i> 输出文件名前缀:
+                                        </label>
+                                        <input type="text" id="split-output-prefix-input" class="filename-prefix-input" placeholder="例如: sprite_sheet_" maxlength="50">
+                                    </div>
+                                    <div class="conversion-actions">
+                                        <div class="setting-row">
+                                            <label for="split-rows-input">
+                                                <i class="fas fa-border-all"></i> 行数:
+                                            </label>
+                                            <input type="number" id="split-rows-input" min="1" max="100" value="1" class="number-input">
+                                            <small>序列图集的行数</small>
+                                        </div>
+                                        <div class="setting-row">
+                                            <label for="split-cols-input">
+                                                <i class="fas fa-border-all"></i> 列数:
+                                            </label>
+                                            <input type="number" id="split-cols-input" min="1" max="100" value="1" class="number-input">
+                                            <small>序列图集的列数</small>
+                                        </div>
+                                        <div class="setting-row">
+                                            <label for="split-direction-select">
+                                                <i class="fas fa-arrows-alt"></i> 提取方向:
+                                            </label>
+                                            <select id="split-direction-select" class="select-input">
+                                                <option value="lr-tb">从左至右，从上至下</option>
+                                                <option value="rl-tb">从右至左，从上至下</option>
+                                                <option value="lr-bt">从左至右，从下至上</option>
+                                                <option value="rl-bt">从右至左，从下至上</option>
+                                            </select>
+                                        </div>
+                                        <button class="small-btn" id="split-sheet-btn">
+                                            <i class="fas fa-object-ungroup"></i> 拆分序列图集
+                                        </button>
+                                        <button class="small-btn" id="download-split-btn" disabled>
+                                            <i class="fas fa-download"></i> 下载全部拆分图
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="conversion-output">
+                                    <div class="output-files" id="split-output-files">
+                                        <p class="no-output">暂无拆分输出。</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tool-info-box">
+                            <h4><i class="fas fa-info-circle"></i> 关于合并/拆分序列图集</h4>
+                            <p>此工具提供两个功能：1) 将多张序列图合并为一张序列图集，可配置行列数和排列方向；2) 将单张序列图集拆分为多张序列图，可配置行列数和提取方向。所有处理均在您的浏览器中完成，图片数据不会发送到服务器。</p>
+                            <p><strong>注意：</strong>导出的图片为PNG格式并保留透明通道。合并功能需要所有图片尺寸一致。拆分功能需要知道原始序列图集的行列数。</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="content-footer">
@@ -357,6 +525,7 @@
     <script src="wwwroot/js/tools/3d-converter.js"></script>
     <script src="wwwroot/js/tools/video-frame-extractor.js"></script>
     <script src="wwwroot/js/tools/file-renamer.js"></script>
+    <script src="wwwroot/js/tools/sprite-sheet-tool.js"></script>
     <script src="wwwroot/js/app.js"></script>
 </body>
 </html>

@@ -91,6 +91,54 @@ const translations = {
         'fileRenamerInfo1': '此工具批量重命名文件夹中的文件。您可以按照文件名或修改时间对文件进行排序，并按照指定前缀和编号格式重命名文件。所有处理均在您的浏览器中完成，文件数据不会发送到服务器。',
         'fileRenamerInfo2': '注意：由于浏览器安全限制，重命名操作仅生成重命名后的文件下载，不会修改原始文件。请下载重命名后的文件到本地。',
 
+        // Sprite Sheet Combiner/Splitter tool
+        'spriteSheetTool': '合并/拆分序列图集',
+        'spriteSheetToolDesc': '合并多张序列图为图集，或拆分图集为序列图',
+        'spriteSheetToolTitle': '合并/拆分序列图集',
+        'spriteSheetToolSubtitle': '合并多张序列图为一张序列图集，或拆分单张序列图集为多张序列图。',
+        'mergeSprites': '合并序列图',
+        'mergeDragDropPrompt': '拖放多张序列图或点击浏览',
+        'mergeFormats': '支持PNG格式，保留透明通道',
+        'mergeSelectedFiles': '已选文件:',
+        'mergeTotalSize': '总大小:',
+        'mergePreview': '序列图预览',
+        'mergeSettings': '合并设置',
+        'mergeOutputName': '输出文件名:',
+        'mergeOutputNamePlaceholder': '例如: sprite_sheet',
+        'mergeRows': '行数:',
+        'mergeRowsHelp': '每列图片数自动计算',
+        'mergeDirection': '排列方向:',
+        'mergeDirectionOption1': '从左至右，从上至下',
+        'mergeDirectionOption2': '从右至左，从上至下',
+        'mergeDirectionOption3': '从左至右，从下至上',
+        'mergeDirectionOption4': '从右至左，从下至上',
+        'mergeSpritesBtn': '合并序列图',
+        'downloadMergedBtn': '下载合并图集',
+        'noMergeOutput': '暂无合并输出。',
+        'splitSprites': '拆分序列图集',
+        'splitDragDropPrompt': '拖放序列图集文件或点击浏览',
+        'splitSelectedFile': '已选文件:',
+        'splitFileSize': '文件大小:',
+        'splitPreview': '序列图集预览',
+        'splitSettings': '拆分设置',
+        'splitOutputPrefix': '输出文件名前缀:',
+        'splitOutputPrefixPlaceholder': '例如: sprite_sheet_',
+        'splitRows': '行数:',
+        'splitRowsHelp': '序列图集的行数',
+        'splitCols': '列数:',
+        'splitColsHelp': '序列图集的列数',
+        'splitDirection': '提取方向:',
+        'splitDirectionOption1': '从左至右，从上至下',
+        'splitDirectionOption2': '从右至左，从上至下',
+        'splitDirectionOption3': '从左至右，从下至上',
+        'splitDirectionOption4': '从右至左，从下至上',
+        'splitSheetBtn': '拆分序列图集',
+        'downloadSplitBtn': '下载全部拆分图',
+        'noSplitOutput': '暂无拆分输出。',
+        'aboutSpriteSheetTool': '关于合并/拆分序列图集',
+        'spriteSheetToolInfo1': '此工具提供两个功能：1) 将多张序列图合并为一张序列图集，可配置行列数和排列方向；2) 将单张序列图集拆分为多张序列图，可配置行列数和提取方向。所有处理均在您的浏览器中完成，图片数据不会发送到服务器。',
+        'spriteSheetToolInfo2': '注意：导出的图片为PNG格式并保留透明通道。合并功能需要所有图片尺寸一致。拆分功能需要知道原始序列图集的行列数。',
+
         // Footer
         'footerText': '所有处理均在您的浏览器中进行。数据不会发送到服务器。',
         'copyright': '© 2026 Roxami Studio',
@@ -135,6 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
     init3DConverter();
     initVideoFrameExtractor();
     initFileRenamer();
+    initSpriteSheetTool();
     initLanguageToggle();
 
     // Set initial active tool
@@ -182,6 +231,9 @@ function initToolSwitcher() {
                             break;
                         case 'file-renamer':
                             applyFileRenamerTranslations(langData);
+                            break;
+                        case 'sprite-sheet-tool':
+                            applySpriteSheetToolTranslations(langData);
                             break;
                     }
                 }
@@ -476,6 +528,9 @@ function applyTranslations(language) {
         } else if (toolId === 'video-frame-extractor' && titleElement && descElement) {
             titleElement.textContent = preserveProperNouns(langData.videoFrameExtractor);
             descElement.textContent = preserveProperNouns(langData.videoFrameExtractorDesc);
+        } else if (toolId === 'sprite-sheet-tool' && titleElement && descElement) {
+            titleElement.textContent = preserveProperNouns(langData.spriteSheetTool);
+            descElement.textContent = preserveProperNouns(langData.spriteSheetToolDesc);
         }
     });
 
@@ -719,6 +774,177 @@ function applyVideoFrameExtractorTranslations(langData) {
     }
 }
 
+function applySpriteSheetToolTranslations(langData) {
+    const placeholderHeader = document.querySelector('#sprite-sheet-tool .placeholder-header');
+    if (placeholderHeader) {
+        const h2 = placeholderHeader.querySelector('h2');
+        const p = placeholderHeader.querySelector('p:first-of-type');
+        if (h2) h2.innerHTML = `<i class="fas fa-th"></i> ${preserveProperNouns(langData.spriteSheetToolTitle)}`;
+        if (p) p.textContent = preserveProperNouns(langData.spriteSheetToolSubtitle);
+    }
+
+    // 合并功能部分
+    const mergeInputSection = document.querySelector('#sprite-sheet-tool .tool-ui:first-child .input-section');
+    if (mergeInputSection) {
+        const h3 = mergeInputSection.querySelector('.section-header h3');
+        if (h3) h3.textContent = preserveProperNouns(langData.mergeSprites);
+
+        const uploadPrompt = mergeInputSection.querySelector('.upload-prompt p');
+        if (uploadPrompt) uploadPrompt.textContent = preserveProperNouns(langData.mergeDragDropPrompt);
+
+        const mergeFormats = mergeInputSection.querySelector('.upload-prompt small');
+        if (mergeFormats) mergeFormats.textContent = preserveProperNouns(langData.mergeFormats);
+
+        const fileInfoLabels = mergeInputSection.querySelectorAll('.file-info p strong');
+        if (fileInfoLabels.length >= 2) {
+            fileInfoLabels[0].textContent = preserveProperNouns(langData.mergeSelectedFiles);
+            fileInfoLabels[1].textContent = preserveProperNouns(langData.mergeTotalSize);
+        }
+
+        const previewTitle = mergeInputSection.querySelector('.preview-section h4');
+        if (previewTitle) previewTitle.textContent = preserveProperNouns(langData.mergePreview);
+    }
+
+    const mergeOutputSection = document.querySelector('#sprite-sheet-tool .tool-ui:first-child .output-section');
+    if (mergeOutputSection) {
+        const h3 = mergeOutputSection.querySelector('.section-header h3');
+        if (h3) h3.textContent = preserveProperNouns(langData.mergeSettings);
+
+        const prefixLabel = mergeOutputSection.querySelector('.filename-prefix-container label');
+        if (prefixLabel && langData.mergeOutputName) {
+            prefixLabel.innerHTML = `<i class="fas fa-tag"></i> ${preserveProperNouns(langData.mergeOutputName)}`;
+        }
+
+        const prefixInput = mergeOutputSection.querySelector('#merge-output-name-input');
+        if (prefixInput && langData.mergeOutputNamePlaceholder) {
+            prefixInput.placeholder = preserveProperNouns(langData.mergeOutputNamePlaceholder);
+        }
+
+        const rowsLabel = mergeOutputSection.querySelector('.setting-row:first-of-type label');
+        if (rowsLabel && langData.mergeRows) {
+            rowsLabel.innerHTML = `<i class="fas fa-border-all"></i> ${preserveProperNouns(langData.mergeRows)}`;
+        }
+
+        const rowsHelp = mergeOutputSection.querySelector('.setting-row:first-of-type small');
+        if (rowsHelp && langData.mergeRowsHelp) {
+            rowsHelp.textContent = preserveProperNouns(langData.mergeRowsHelp);
+        }
+
+        const directionLabel = mergeOutputSection.querySelector('.setting-row:nth-of-type(2) label');
+        if (directionLabel && langData.mergeDirection) {
+            directionLabel.innerHTML = `<i class="fas fa-arrows-alt"></i> ${preserveProperNouns(langData.mergeDirection)}`;
+        }
+
+        const directionSelect = mergeOutputSection.querySelector('#merge-direction-select');
+        if (directionSelect && directionSelect.options.length >= 4) {
+            directionSelect.options[0].textContent = preserveProperNouns(langData.mergeDirectionOption1);
+            directionSelect.options[1].textContent = preserveProperNouns(langData.mergeDirectionOption2);
+            directionSelect.options[2].textContent = preserveProperNouns(langData.mergeDirectionOption3);
+            directionSelect.options[3].textContent = preserveProperNouns(langData.mergeDirectionOption4);
+        }
+
+        const buttons = mergeOutputSection.querySelectorAll('.conversion-actions .small-btn');
+        if (buttons.length >= 2) {
+            buttons[0].innerHTML = `<i class="fas fa-object-group"></i> ${preserveProperNouns(langData.mergeSpritesBtn)}`;
+            buttons[1].innerHTML = `<i class="fas fa-download"></i> ${preserveProperNouns(langData.downloadMergedBtn)}`;
+        }
+
+        const noOutput = mergeOutputSection.querySelector('.no-output');
+        if (noOutput) noOutput.textContent = preserveProperNouns(langData.noMergeOutput);
+    }
+
+    // 拆分功能部分
+    const splitInputSection = document.querySelector('#sprite-sheet-tool .tool-ui:last-child .input-section');
+    if (splitInputSection) {
+        const h3 = splitInputSection.querySelector('.section-header h3');
+        if (h3) h3.textContent = preserveProperNouns(langData.splitSprites);
+
+        const uploadPrompt = splitInputSection.querySelector('.upload-prompt p');
+        if (uploadPrompt) uploadPrompt.textContent = preserveProperNouns(langData.splitDragDropPrompt);
+
+        const splitFormats = splitInputSection.querySelector('.upload-prompt small');
+        if (splitFormats) splitFormats.textContent = preserveProperNouns(langData.mergeFormats); // 使用相同的格式说明
+
+        const fileInfoLabels = splitInputSection.querySelectorAll('.file-info p strong');
+        if (fileInfoLabels.length >= 2) {
+            fileInfoLabels[0].textContent = preserveProperNouns(langData.splitSelectedFile);
+            fileInfoLabels[1].textContent = preserveProperNouns(langData.splitFileSize);
+        }
+
+        const previewTitle = splitInputSection.querySelector('.preview-section h4');
+        if (previewTitle) previewTitle.textContent = preserveProperNouns(langData.splitPreview);
+    }
+
+    const splitOutputSection = document.querySelector('#sprite-sheet-tool .tool-ui:last-child .output-section');
+    if (splitOutputSection) {
+        const h3 = splitOutputSection.querySelector('.section-header h3');
+        if (h3) h3.textContent = preserveProperNouns(langData.splitSettings);
+
+        const prefixLabel = splitOutputSection.querySelector('.filename-prefix-container label');
+        if (prefixLabel && langData.splitOutputPrefix) {
+            prefixLabel.innerHTML = `<i class="fas fa-tag"></i> ${preserveProperNouns(langData.splitOutputPrefix)}`;
+        }
+
+        const prefixInput = splitOutputSection.querySelector('#split-output-prefix-input');
+        if (prefixInput && langData.splitOutputPrefixPlaceholder) {
+            prefixInput.placeholder = preserveProperNouns(langData.splitOutputPrefixPlaceholder);
+        }
+
+        const rowsLabel = splitOutputSection.querySelector('.setting-row:first-of-type label');
+        if (rowsLabel && langData.splitRows) {
+            rowsLabel.innerHTML = `<i class="fas fa-border-all"></i> ${preserveProperNouns(langData.splitRows)}`;
+        }
+
+        const rowsHelp = splitOutputSection.querySelector('.setting-row:first-of-type small');
+        if (rowsHelp && langData.splitRowsHelp) {
+            rowsHelp.textContent = preserveProperNouns(langData.splitRowsHelp);
+        }
+
+        const colsLabel = splitOutputSection.querySelector('.setting-row:nth-of-type(2) label');
+        if (colsLabel && langData.splitCols) {
+            colsLabel.innerHTML = `<i class="fas fa-border-all"></i> ${preserveProperNouns(langData.splitCols)}`;
+        }
+
+        const colsHelp = splitOutputSection.querySelector('.setting-row:nth-of-type(2) small');
+        if (colsHelp && langData.splitColsHelp) {
+            colsHelp.textContent = preserveProperNouns(langData.splitColsHelp);
+        }
+
+        const directionLabel = splitOutputSection.querySelector('.setting-row:nth-of-type(3) label');
+        if (directionLabel && langData.splitDirection) {
+            directionLabel.innerHTML = `<i class="fas fa-arrows-alt"></i> ${preserveProperNouns(langData.splitDirection)}`;
+        }
+
+        const directionSelect = splitOutputSection.querySelector('#split-direction-select');
+        if (directionSelect && directionSelect.options.length >= 4) {
+            directionSelect.options[0].textContent = preserveProperNouns(langData.splitDirectionOption1);
+            directionSelect.options[1].textContent = preserveProperNouns(langData.splitDirectionOption2);
+            directionSelect.options[2].textContent = preserveProperNouns(langData.splitDirectionOption3);
+            directionSelect.options[3].textContent = preserveProperNouns(langData.splitDirectionOption4);
+        }
+
+        const buttons = splitOutputSection.querySelectorAll('.conversion-actions .small-btn');
+        if (buttons.length >= 2) {
+            buttons[0].innerHTML = `<i class="fas fa-object-ungroup"></i> ${preserveProperNouns(langData.splitSheetBtn)}`;
+            buttons[1].innerHTML = `<i class="fas fa-download"></i> ${preserveProperNouns(langData.downloadSplitBtn)}`;
+        }
+
+        const noOutput = splitOutputSection.querySelector('.no-output');
+        if (noOutput) noOutput.textContent = preserveProperNouns(langData.noSplitOutput);
+    }
+
+    const infoBox = document.querySelector('#sprite-sheet-tool .tool-info-box');
+    if (infoBox) {
+        const h4 = infoBox.querySelector('h4');
+        const paragraphs = infoBox.querySelectorAll('p');
+        if (h4) h4.innerHTML = `<i class="fas fa-info-circle"></i> ${preserveProperNouns(langData.aboutSpriteSheetTool)}`;
+        if (paragraphs.length >= 2) {
+            paragraphs[0].textContent = preserveProperNouns(langData.spriteSheetToolInfo1);
+            paragraphs[1].innerHTML = `<strong>${preserveProperNouns('Note:')}</strong> ${preserveProperNouns(langData.spriteSheetToolInfo2)}`;
+        }
+    }
+}
+
 // Helper function to preserve proper nouns in translated text
 function preserveProperNouns(text) {
     if (currentLanguage === 'en') return text; // No need to process for English
@@ -771,6 +997,9 @@ function updateCurrentToolName() {
                     break;
                 case 'file-renamer':
                     toolName = langData.fileRenamer;
+                    break;
+                case 'sprite-sheet-tool':
+                    toolName = langData.spriteSheetTool;
                     break;
                 default:
                     toolName = 'Unknown Tool';
