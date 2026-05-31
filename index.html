@@ -89,6 +89,15 @@
                             <p>水平/垂直翻转图片，支持旋转</p>
                         </div>
                     </div>
+                    <div class="tool-item" data-tool="perfect-pixel">
+                        <div class="tool-icon">
+                            <i class="fas fa-th"></i>
+                        </div>
+                        <div class="tool-info">
+                            <h3>完美像素</h3>
+                            <p>像素图精炼与网格重采样</p>
+                        </div>
+                    </div>
                 </div>
             </aside>
 
@@ -606,6 +615,144 @@
                             <p><strong>注意：</strong>导出的图片为PNG格式并保留透明通道。大尺寸图片处理可能需要一些时间。</p>
                         </div>
                     </div>
+                    <div class="tool-placeholder" id="perfect-pixel">
+                        <div class="placeholder-header">
+                            <h2><i class="fas fa-th"></i> 完美像素</h2>
+                            <p>将模糊像素图精炼为干净完美像素，自动检测或手动指定网格尺寸。</p>
+                        </div>
+                        <div class="tool-ui">
+                            <div class="input-section">
+                                <div class="section-header">
+                                    <h3>上传图片</h3>
+                                </div>
+                                <div class="file-upload-area">
+                                    <input type="file" id="pp-image-input" accept="image/*" multiple class="file-input">
+                                    <div class="upload-prompt">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <p>拖放图片文件或点击浏览</p>
+                                        <small>支持PNG、JPG、WebP等格式</small>
+                                    </div>
+                                    <div class="file-info" id="pp-file-info" style="display: none;">
+                                        <p><strong>已选文件:</strong> <span id="pp-file-count">0</span> 张</p>
+                                        <p><strong>总大小:</strong> <span id="pp-total-size">0 Bytes</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="output-section">
+                                <div class="section-header">
+                                    <h3>参数设置</h3>
+                                </div>
+                                <div class="pp-settings">
+                                    <div class="setting-row">
+                                        <label><i class="fas fa-arrows-alt-h"></i> 网格宽度:</label>
+                                        <select id="pp-grid-w-mode" class="select-input">
+                                            <option value="auto">自动检测</option>
+                                            <option value="power2">2的次幂</option>
+                                        </select>
+                                        <select id="pp-grid-w-val" class="select-input" style="display:none;">
+                                            <option value="32">32</option>
+                                            <option value="64">64</option>
+                                            <option value="128">128</option>
+                                            <option value="256" selected>256</option>
+                                            <option value="512">512</option>
+                                            <option value="1024">1024</option>
+                                            <option value="2048">2048</option>
+                                        </select>
+                                    </div>
+                                    <div class="setting-row">
+                                        <label><i class="fas fa-arrows-alt-v"></i> 网格高度:</label>
+                                        <select id="pp-grid-h-mode" class="select-input">
+                                            <option value="auto">自动检测</option>
+                                            <option value="power2">2的次幂</option>
+                                        </select>
+                                        <select id="pp-grid-h-val" class="select-input" style="display:none;">
+                                            <option value="32">32</option>
+                                            <option value="64">64</option>
+                                            <option value="128">128</option>
+                                            <option value="256" selected>256</option>
+                                            <option value="512">512</option>
+                                            <option value="1024">1024</option>
+                                            <option value="2048">2048</option>
+                                        </select>
+                                    </div>
+                                    <div class="setting-row">
+                                        <label><i class="fas fa-eyedropper"></i> 采样方法:</label>
+                                        <select id="pp-sample-method" class="select-input">
+                                            <option value="center">Center - 中心点</option>
+                                            <option value="median">Median - 中位数</option>
+                                            <option value="majority">Majority - 众数（最佳）</option>
+                                        </select>
+                                    </div>
+                                    <div class="setting-row">
+                                        <label><i class="fas fa-sliders-h"></i> 精炼强度:</label>
+                                        <input type="range" id="pp-refine" min="0" max="50" value="25" step="1">
+                                        <span id="pp-refine-val">0.25</span>
+                                    </div>
+                                </div>
+                                <div class="conversion-actions">
+                                    <button class="small-btn" id="pp-process-btn">
+                                        <i class="fas fa-play"></i> 开始处理全部
+                                    </button>
+                                    <button class="small-btn" id="pp-reset-btn">
+                                        <i class="fas fa-undo-alt"></i> 重置
+                                    </button>
+                                </div>
+                                <div class="preview-section" id="pp-preview-section" style="display: none;">
+                                    <div class="pp-playback-controls">
+                                        <div class="pp-playback-buttons">
+                                            <button class="small-btn" id="pp-prev-btn" disabled><i class="fas fa-step-backward"></i></button>
+                                            <button class="small-btn" id="pp-play-btn"><i class="fas fa-play"></i></button>
+                                            <button class="small-btn" id="pp-next-btn" disabled><i class="fas fa-step-forward"></i></button>
+                                        </div>
+                                        <span id="pp-frame-counter">帧: 1 / 1</span>
+                                        <label class="pp-playback-setting">
+                                            速度:<select id="pp-speed" class="select-input">
+                                                <option value="50">50ms</option>
+                                                <option value="100" selected>100ms</option>
+                                                <option value="200">200ms</option>
+                                                <option value="500">500ms</option>
+                                            </select>
+                                        </label>
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="pp-loop" checked>
+                                            <span>循环</span>
+                                        </label>
+                                    </div>
+                                    <div class="flip-comparison">
+                                        <div class="comparison-panel">
+                                            <h5>原图</h5>
+                                            <div class="comparison-image" id="pp-original-preview">
+                                                <img src="" alt="原图">
+                                                <span class="preview-dimensions">0×0</span>
+                                            </div>
+                                        </div>
+                                        <div class="comparison-panel">
+                                            <h5>结果</h5>
+                                            <div class="comparison-image" id="pp-result-preview">
+                                                <img src="" alt="结果">
+                                                <span class="preview-dimensions">0×0</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="conversion-output">
+                                    <div class="output-files" id="pp-output-files">
+                                        <p class="no-output">暂无处理输出。</p>
+                                    </div>
+                                    <div class="download-actions">
+                                        <button class="small-btn" id="pp-download-all-btn" disabled>
+                                            <i class="fas fa-download"></i> 全部下载
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tool-info-box">
+                            <h4><i class="fas fa-info-circle"></i> 关于完美像素</h4>
+                            <p>此工具将模糊的AI生成像素图精炼为干净完美的像素图。通过自动检测像素网格或手动指定2的次幂分辨率，结合边缘精炼和多种采样方法，输出清晰的像素艺术作品。算法参考 <a href="https://github.com/theamusing/perfectPixel" target="_blank">perfectPixel</a>。</p>
+                            <p><strong>注意：</strong>处理大尺寸图片可能耗时较长。所有处理均在浏览器本地完成，数据不会发送到服务器。</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="content-footer">
@@ -635,6 +782,7 @@
     <script src="wwwroot/js/tools/file-renamer.js"></script>
     <script src="wwwroot/js/tools/sprite-sheet-tool.js"></script>
     <script src="wwwroot/js/tools/image-flipper.js"></script>
+    <script src="wwwroot/js/tools/perfect-pixel.js"></script>
     <script src="wwwroot/js/app.js"></script>
 </body>
 </html>

@@ -143,6 +143,10 @@ const translations = {
         'imageFlipper': '图片翻转工具',
         'imageFlipperDesc': '水平/垂直翻转图片，支持旋转',
 
+        // Perfect Pixel tool
+        'perfectPixel': '完美像素',
+        'perfectPixelDesc': '像素图精炼与网格重采样',
+
         // Footer
         'footerText': '所有处理均在您的浏览器中进行。数据不会发送到服务器。',
         'copyright': '© 2026 Roxami Studio',
@@ -189,6 +193,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initFileRenamer();
     initSpriteSheetTool();
     initImageFlipper();
+    initPerfectPixel();
     initLanguageToggle();
 
     // Set initial active tool
@@ -242,6 +247,9 @@ function initToolSwitcher() {
                             break;
                         case 'image-flipper':
                             applyImageFlipperTranslations(langData);
+                            break;
+                        case 'perfect-pixel':
+                            applyPerfectPixelTranslations(langData);
                             break;
                     }
                 }
@@ -542,6 +550,9 @@ function applyTranslations(language) {
         } else if (toolId === 'image-flipper' && titleElement && descElement) {
             titleElement.textContent = preserveProperNouns(langData.imageFlipper);
             descElement.textContent = preserveProperNouns(langData.imageFlipperDesc);
+        } else if (toolId === 'perfect-pixel' && titleElement && descElement) {
+            titleElement.textContent = preserveProperNouns(langData.perfectPixel);
+            descElement.textContent = preserveProperNouns(langData.perfectPixelDesc);
         }
     });
 
@@ -581,6 +592,8 @@ function applyTranslations(language) {
             applySpriteSheetToolTranslations(langData);
         } else if (toolId === 'image-flipper') {
             applyImageFlipperTranslations(langData);
+        } else if (toolId === 'perfect-pixel') {
+            applyPerfectPixelTranslations(langData);
         }
     }
 
@@ -970,6 +983,16 @@ function applyImageFlipperTranslations(langData) {
     }
 }
 
+function applyPerfectPixelTranslations(langData) {
+    const placeholderHeader = document.querySelector('#perfect-pixel .placeholder-header');
+    if (placeholderHeader) {
+        const h2 = placeholderHeader.querySelector('h2');
+        const p = placeholderHeader.querySelector('p:first-of-type');
+        if (h2) h2.innerHTML = `<i class="fas fa-th"></i> ${preserveProperNouns(langData.perfectPixelTitle || langData.perfectPixel)}`;
+        if (p) p.textContent = preserveProperNouns(langData.perfectPixelSubtitle || langData.perfectPixelDesc);
+    }
+}
+
 // Helper function to preserve proper nouns in translated text
 function preserveProperNouns(text) {
     if (currentLanguage === 'en') return text; // No need to process for English
@@ -1028,6 +1051,9 @@ function updateCurrentToolName() {
                     break;
                 case 'image-flipper':
                     toolName = langData.imageFlipper;
+                    break;
+                case 'perfect-pixel':
+                    toolName = langData.perfectPixel;
                     break;
                 default:
                     toolName = 'Unknown Tool';
