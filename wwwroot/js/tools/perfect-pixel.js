@@ -466,7 +466,7 @@ function initPerfectPixel() {
                 out[di] = d[si];
                 out[di + 1] = d[si + 1];
                 out[di + 2] = d[si + 2];
-                out[di + 3] = 255;
+                out[di + 3] = d[si + 3];
             }
         }
         return out;
@@ -484,7 +484,7 @@ function initPerfectPixel() {
             for (let x = 0; x < w; x++) {
                 const x0 = xCoords[x];
                 const x1 = xCoords[x + 1];
-                const rVals = [], gVals = [], bVals = [];
+                const rVals = [], gVals = [], bVals = [], aVals = [];
                 for (let cy = y0; cy < y1; cy++) {
                     if (cy < 0 || cy >= imageData.height) continue;
                     for (let cx = x0; cx < x1; cx++) {
@@ -493,16 +493,18 @@ function initPerfectPixel() {
                         rVals.push(d[si]);
                         gVals.push(d[si + 1]);
                         bVals.push(d[si + 2]);
+                        aVals.push(d[si + 3]);
                     }
                 }
                 rVals.sort((a, b) => a - b);
                 gVals.sort((a, b) => a - b);
                 bVals.sort((a, b) => a - b);
+                aVals.sort((a, b) => a - b);
                 const di = (y * w + x) * 4;
                 out[di] = rVals.length > 0 ? rVals[(rVals.length / 2) | 0] : 0;
                 out[di + 1] = gVals.length > 0 ? gVals[(gVals.length / 2) | 0] : 0;
                 out[di + 2] = bVals.length > 0 ? bVals[(bVals.length / 2) | 0] : 0;
-                out[di + 3] = 255;
+                out[di + 3] = aVals.length > 0 ? aVals[(aVals.length / 2) | 0] : 0;
             }
         }
         return out;
@@ -526,7 +528,7 @@ function initPerfectPixel() {
                     for (let cx = x0; cx < x1; cx++) {
                         if (cx < 0 || cx >= iw) continue;
                         const si = (cy * iw + cx) * 4;
-                        pixels.push([d[si], d[si + 1], d[si + 2]]);
+                        pixels.push([d[si], d[si + 1], d[si + 2], d[si + 3]]);
                     }
                 }
                 if (pixels.length === 0) continue;
@@ -538,7 +540,7 @@ function initPerfectPixel() {
                 }
                 if (samples.length < 2) {
                     const di = (y * w + x) * 4;
-                    out[di] = samples[0][0]; out[di + 1] = samples[0][1]; out[di + 2] = samples[0][2]; out[di + 3] = 255;
+                    out[di] = samples[0][0]; out[di + 1] = samples[0][1]; out[di + 2] = samples[0][2]; out[di + 3] = samples[0][3];
                     continue;
                 }
                 let c0 = samples[0];
@@ -547,28 +549,28 @@ function initPerfectPixel() {
                 let maxDist = 0;
                 for (let i = 0; i < samples.length; i++) {
                     for (let j = i + 1; j < samples.length; j++) {
-                        const dist = (samples[i][0] - samples[j][0]) ** 2 + (samples[i][1] - samples[j][1]) ** 2 + (samples[i][2] - samples[j][2]) ** 2;
+                        const dist = (samples[i][0] - samples[j][0]) ** 2 + (samples[i][1] - samples[j][1]) ** 2 + (samples[i][2] - samples[j][2]) ** 2 + (samples[i][3] - samples[j][3]) ** 2;
                         if (dist > maxDist) { maxDist = dist; c0 = samples[i]; c1 = samples[j]; }
                     }
                 }
                 for (let iter = 0; iter < iters; iter++) {
-                    let g0R = 0, g0G = 0, g0B = 0, g0Cnt = 0;
-                    let g1R = 0, g1G = 0, g1B = 0, g1Cnt = 0;
+                    let g0R = 0, g0G = 0, g0B = 0, g0A = 0, g0Cnt = 0;
+                    let g1R = 0, g1G = 0, g1B = 0, g1A = 0, g1Cnt = 0;
                     for (let i = 0; i < samples.length; i++) {
-                        const dr = samples[i][0] - c0[0], dg = samples[i][1] - c0[1], db = samples[i][2] - c0[2];
-                        const d0 = dr * dr + dg * dg + db * db;
-                        const d1r = samples[i][0] - c1[0], d1g = samples[i][1] - c1[1], d1b = samples[i][2] - c1[2];
-                        const d1 = d1r * d1r + d1g * d1g + d1b * d1b;
-                        if (d0 <= d1) { g0R += samples[i][0]; g0G += samples[i][1]; g0B += samples[i][2]; g0Cnt++; }
-                        else { g1R += samples[i][0]; g1G += samples[i][1]; g1B += samples[i][2]; g1Cnt++; }
+                        const dr = samples[i][0] - c0[0], dg = samples[i][1] - c0[1], db = samples[i][2] - c0[2], da = samples[i][3] - c0[3];
+                        const d0 = dr * dr + dg * dg + db * db + da * da;
+                        const d1r = samples[i][0] - c1[0], d1g = samples[i][1] - c1[1], d1b = samples[i][2] - c1[2], d1a = samples[i][3] - c1[3];
+                        const d1 = d1r * d1r + d1g * d1g + d1b * d1b + d1a * d1a;
+                        if (d0 <= d1) { g0R += samples[i][0]; g0G += samples[i][1]; g0B += samples[i][2]; g0A += samples[i][3]; g0Cnt++; }
+                        else { g1R += samples[i][0]; g1G += samples[i][1]; g1B += samples[i][2]; g1A += samples[i][3]; g1Cnt++; }
                     }
-                    if (g0Cnt > 0) c0 = [(g0R / g0Cnt) | 0, (g0G / g0Cnt) | 0, (g0B / g0Cnt) | 0];
-                    if (g1Cnt > 0) c1 = [(g1R / g1Cnt) | 0, (g1G / g1Cnt) | 0, (g1B / g1Cnt) | 0];
+                    if (g0Cnt > 0) c0 = [(g0R / g0Cnt) | 0, (g0G / g0Cnt) | 0, (g0B / g0Cnt) | 0, (g0A / g0Cnt) | 0];
+                    if (g1Cnt > 0) c1 = [(g1R / g1Cnt) | 0, (g1G / g1Cnt) | 0, (g1B / g1Cnt) | 0, (g1A / g1Cnt) | 0];
                     lastCnt0 = g0Cnt; lastCnt1 = g1Cnt;
                 }
                 const p = lastCnt0 >= lastCnt1 ? c0 : c1;
                 const di = (y * w + x) * 4;
-                out[di] = p[0]; out[di + 1] = p[1]; out[di + 2] = p[2]; out[di + 3] = 255;
+                out[di] = p[0]; out[di + 1] = p[1]; out[di + 2] = p[2]; out[di + 3] = p[3];
             }
         }
         return out;
