@@ -80,6 +80,15 @@
                             <p>合并多张序列图为图集，或拆分图集为序列图</p>
                         </div>
                     </div>
+                    <div class="tool-item" data-tool="image-flipper">
+                        <div class="tool-icon">
+                            <i class="fas fa-arrows-alt-h"></i>
+                        </div>
+                        <div class="tool-info">
+                            <h3>图片翻转工具</h3>
+                            <p>水平/垂直翻转图片，支持旋转</p>
+                        </div>
+                    </div>
                 </div>
             </aside>
 
@@ -498,6 +507,105 @@
                             <p><strong>注意：</strong>导出的图片为PNG格式并保留透明通道。合并功能需要所有图片尺寸一致。拆分功能需要知道原始序列图集的行列数。</p>
                         </div>
                     </div>
+                    <div class="tool-placeholder" id="image-flipper">
+                        <div class="placeholder-header">
+                            <h2><i class="fas fa-arrows-alt-h"></i> 图片翻转工具</h2>
+                            <p>水平/垂直翻转图片，或旋转90°/180°/270°，批量处理全部图片。</p>
+                        </div>
+                        <div class="tool-ui">
+                            <div class="input-section">
+                                <div class="section-header">
+                                    <h3>上传图片</h3>
+                                </div>
+                                <div class="file-upload-area">
+                                    <input type="file" id="flipper-image-input" accept="image/*" multiple class="file-input">
+                                    <div class="upload-prompt">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <p>拖放图片文件或点击浏览</p>
+                                        <small>支持PNG、JPG、WebP等格式，保留透明通道</small>
+                                    </div>
+                                    <div class="file-info" id="flipper-file-info" style="display: none;">
+                                        <p><strong>已选文件:</strong> <span id="flipper-file-count">0</span> 张</p>
+                                        <p><strong>总大小:</strong> <span id="flipper-total-size">0 Bytes</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="output-section">
+                                <div class="section-header">
+                                    <h3>操作选项</h3>
+                                    <div class="flip-controls">
+                                        <div class="control-group">
+                                            <label><i class="fas fa-arrows-alt-h"></i> 翻转:</label>
+                                            <div class="control-buttons">
+                                                <button class="small-btn" id="flipper-flip-x-btn">
+                                                    <i class="fas fa-arrows-alt-h"></i> 水平翻转
+                                                </button>
+                                                <button class="small-btn" id="flipper-flip-y-btn">
+                                                    <i class="fas fa-arrows-alt-v"></i> 垂直翻转
+                                                </button>
+                                                <button class="small-btn" id="flipper-flip-xy-btn">
+                                                    <i class="fas fa-expand-arrows-alt"></i> XY翻转
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label><i class="fas fa-redo"></i> 旋转:</label>
+                                            <div class="control-buttons">
+                                                <button class="small-btn" id="flipper-rotate-90-btn">
+                                                    <i class="fas fa-redo"></i> 旋转90°
+                                                </button>
+                                                <button class="small-btn" id="flipper-rotate-180-btn">
+                                                    <i class="fas fa-sync-alt"></i> 旋转180°
+                                                </button>
+                                                <button class="small-btn" id="flipper-rotate-270-btn">
+                                                    <i class="fas fa-undo"></i> 旋转270°
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <button class="small-btn" id="flipper-reset-btn">
+                                                <i class="fas fa-undo-alt"></i> 重置
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="preview-section" id="flipper-preview-section" style="display: none;">
+                                    <h4>预览对比 - 首张图片</h4>
+                                    <div class="flip-comparison">
+                                        <div class="comparison-panel">
+                                            <h5>原图</h5>
+                                            <div class="comparison-image" id="flipper-original-preview">
+                                                <img src="" alt="原图">
+                                                <span class="preview-dimensions">0×0</span>
+                                            </div>
+                                        </div>
+                                        <div class="comparison-panel">
+                                            <h5>结果</h5>
+                                            <div class="comparison-image" id="flipper-result-preview">
+                                                <img src="" alt="结果">
+                                                <span class="preview-dimensions">0×0</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="conversion-output">
+                                    <div class="output-files" id="flipper-output-files">
+                                        <p class="no-output">暂无处理输出。</p>
+                                    </div>
+                                    <div class="download-actions">
+                                        <button class="small-btn" id="flipper-download-all-btn" disabled>
+                                            <i class="fas fa-download"></i> 全部下载
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tool-info-box">
+                            <h4><i class="fas fa-info-circle"></i> 关于图片翻转工具</h4>
+                            <p>此工具支持水平翻转（X轴镜像）、垂直翻转（Y轴镜像）和旋转（90°/180°/270°）操作。点击翻转或旋转按钮即可批量处理全部图片。所有处理均在您的浏览器中完成，图片数据不会发送到服务器。</p>
+                            <p><strong>注意：</strong>导出的图片为PNG格式并保留透明通道。大尺寸图片处理可能需要一些时间。</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="content-footer">
@@ -526,6 +634,7 @@
     <script src="wwwroot/js/tools/video-frame-extractor.js"></script>
     <script src="wwwroot/js/tools/file-renamer.js"></script>
     <script src="wwwroot/js/tools/sprite-sheet-tool.js"></script>
+    <script src="wwwroot/js/tools/image-flipper.js"></script>
     <script src="wwwroot/js/app.js"></script>
 </body>
 </html>

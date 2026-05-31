@@ -139,6 +139,10 @@ const translations = {
         'spriteSheetToolInfo1': '此工具提供两个功能：1) 将多张序列图合并为一张序列图集，可配置行列数和排列方向；2) 将单张序列图集拆分为多张序列图，可配置行列数和提取方向。所有处理均在您的浏览器中完成，图片数据不会发送到服务器。',
         'spriteSheetToolInfo2': '注意：导出的图片为PNG格式并保留透明通道。合并功能需要所有图片尺寸一致。拆分功能需要知道原始序列图集的行列数。',
 
+        // Image Flipper tool
+        'imageFlipper': '图片翻转工具',
+        'imageFlipperDesc': '水平/垂直翻转图片，支持旋转',
+
         // Footer
         'footerText': '所有处理均在您的浏览器中进行。数据不会发送到服务器。',
         'copyright': '© 2026 Roxami Studio',
@@ -184,6 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initVideoFrameExtractor();
     initFileRenamer();
     initSpriteSheetTool();
+    initImageFlipper();
     initLanguageToggle();
 
     // Set initial active tool
@@ -234,6 +239,9 @@ function initToolSwitcher() {
                             break;
                         case 'sprite-sheet-tool':
                             applySpriteSheetToolTranslations(langData);
+                            break;
+                        case 'image-flipper':
+                            applyImageFlipperTranslations(langData);
                             break;
                     }
                 }
@@ -531,6 +539,9 @@ function applyTranslations(language) {
         } else if (toolId === 'sprite-sheet-tool' && titleElement && descElement) {
             titleElement.textContent = preserveProperNouns(langData.spriteSheetTool);
             descElement.textContent = preserveProperNouns(langData.spriteSheetToolDesc);
+        } else if (toolId === 'image-flipper' && titleElement && descElement) {
+            titleElement.textContent = preserveProperNouns(langData.imageFlipper);
+            descElement.textContent = preserveProperNouns(langData.imageFlipperDesc);
         }
     });
 
@@ -566,6 +577,10 @@ function applyTranslations(language) {
             applyVideoFrameExtractorTranslations(langData);
         } else if (toolId === 'file-renamer') {
             applyFileRenamerTranslations(langData);
+        } else if (toolId === 'sprite-sheet-tool') {
+            applySpriteSheetToolTranslations(langData);
+        } else if (toolId === 'image-flipper') {
+            applyImageFlipperTranslations(langData);
         }
     }
 
@@ -945,6 +960,16 @@ function applySpriteSheetToolTranslations(langData) {
     }
 }
 
+function applyImageFlipperTranslations(langData) {
+    const placeholderHeader = document.querySelector('#image-flipper .placeholder-header');
+    if (placeholderHeader) {
+        const h2 = placeholderHeader.querySelector('h2');
+        const p = placeholderHeader.querySelector('p:first-of-type');
+        if (h2) h2.innerHTML = `<i class="fas fa-arrows-alt-h"></i> ${preserveProperNouns(langData.imageFlipperTitle || langData.imageFlipper)}`;
+        if (p) p.textContent = preserveProperNouns(langData.imageFlipperSubtitle || langData.imageFlipperDesc);
+    }
+}
+
 // Helper function to preserve proper nouns in translated text
 function preserveProperNouns(text) {
     if (currentLanguage === 'en') return text; // No need to process for English
@@ -1000,6 +1025,9 @@ function updateCurrentToolName() {
                     break;
                 case 'sprite-sheet-tool':
                     toolName = langData.spriteSheetTool;
+                    break;
+                case 'image-flipper':
+                    toolName = langData.imageFlipper;
                     break;
                 default:
                     toolName = 'Unknown Tool';
