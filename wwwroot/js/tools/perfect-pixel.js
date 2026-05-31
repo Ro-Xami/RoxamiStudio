@@ -202,6 +202,49 @@ function initPerfectPixel() {
         return [xCoords, yCoords];
     }
 
+    function createFixedGrid(iw, ih, gridW, gridH, refine, gradXSum, gradYSum) {
+        gridW = Math.min(gridW, iw);
+        gridH = Math.min(gridH, ih);
+        if (gridW < 1) gridW = 1;
+        if (gridH < 1) gridH = 1;        const cellW = iw / gridW;
+        const cellH = ih / gridH;
+        const refineW = cellW * refine;
+        const refineH = cellH * refine;
+
+        const xCoords = [];
+        xCoords.push(0);
+        for (let i = 1; i < gridW; i++) {
+            const ideal = (i * iw) / gridW;
+            xCoords.push(Math.round(findBestGrid(ideal, refineW, refineW, gradXSum)));
+        }
+        xCoords.push(iw);
+
+        const yCoords = [];
+        yCoords.push(0);
+        for (let i = 1; i < gridH; i++) {
+            const ideal = (i * ih) / gridH;
+            yCoords.push(Math.round(findBestGrid(ideal, refineH, refineH, gradYSum)));
+        }
+        yCoords.push(ih);
+
+        xCoords.sort((a, b) => a - b);
+        yCoords.sort((a, b) => a - b);
+
+        for (let i = 1; i < xCoords.length; i++) {
+            if (xCoords[i] <= xCoords[i - 1]) xCoords[i] = xCoords[i - 1] + 1;
+        }
+        for (let i = 1; i < yCoords.length; i++) {
+            if (yCoords[i] <= yCoords[i - 1]) yCoords[i] = yCoords[i - 1] + 1;
+        }
+
+        xCoords[0] = 0;
+        xCoords[xCoords.length - 1] = iw;
+        yCoords[0] = 0;
+        yCoords[yCoords.length - 1] = ih;
+
+        return [xCoords, yCoords];
+    }
+
     function detectPeak(proj, peakWidth, relThr, minDist) {
         const len = proj.length;
         const center = (len / 2) | 0;
@@ -541,22 +584,34 @@ function initPerfectPixel() {
     function processSingleImage(imageData, gridW, gridH) {
         const refine = parseInt(refineSlider.value) / 100;
         const method = sampleMethod.value;
-        let detectedW = gridW;
-        let detectedH = gridH;
 
-        if (gridW === null || gridH === null) {
+        let xCoords, yCoords;
+
+        if (gridW !== null || gridH !== null) {
+            let useW = gridW, useH = gridH;
+            if (gridW === null || gridH === null) {
+                const detected = detectGridScale(imageData, 6, 4.0);
+                if (detected === null) {
+                    showNotification('网格检测失败，请将宽高均设为2的次幂', 'error');
+                    return null;
+                }
+                if (gridW === null) useW = detected[0];
+                if (gridH === null) useH = detected[1];
+            }
+            const gray = imageDataToGray(imageData);
+            const [gx, gy] = sobelXY(gray, imageData.width, imageData.height);
+            const gradXSum = sumAbsGradX(gx, imageData.width, imageData.height);
+            const gradYSum = sumAbsGradY(gy, imageData.width, imageData.height);
+            [xCoords, yCoords] = createFixedGrid(imageData.width, imageData.height, useW, useH, refine, gradXSum, gradYSum);
+        } else {
             const detected = detectGridScale(imageData, 6, 4.0);
             if (detected === null) {
                 showNotification('网格检测失败，请手动指定2的次幂分辨率', 'error');
                 return null;
             }
-            detectedW = detected[0];
-            detectedH = detected[1];
+            [xCoords, yCoords] = refineGrids(imageData, detected[0], detected[1], refine);
         }
 
-        const sizeX = detectedW;
-        const sizeY = detectedH;
-        const [xCoords, yCoords] = refineGrids(imageData, sizeX, sizeY, refine);
         const outW = xCoords.length - 1;
         const outH = yCoords.length - 1;
 
