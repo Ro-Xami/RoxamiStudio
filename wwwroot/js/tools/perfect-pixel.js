@@ -12,6 +12,9 @@ function initPerfectPixel() {
     const sampleMethod = document.getElementById('pp-sample-method');
     const refineSlider = document.getElementById('pp-refine');
     const refineVal = document.getElementById('pp-refine-val');
+    const denoiseCheck = document.getElementById('pp-denoise');
+    const denoiseThr = document.getElementById('pp-denoise-thr');
+    const denoiseThrVal = document.getElementById('pp-denoise-thr-val');
     const processBtn = document.getElementById('pp-process-btn');
     const resetBtn = document.getElementById('pp-reset-btn');
     const previewSection = document.getElementById('pp-preview-section');
@@ -576,6 +579,47 @@ function initPerfectPixel() {
         return out;
     }
 
+    function mergeSimilarColors(pixels, w, h, threshold) {
+        const map = {};
+        for (let i = 0; i < pixels.length; i += 4) {
+            const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2], a = pixels[i + 3];
+            if (a === 0) continue;
+            const key = `${r},${g},${b},${a}`;
+            map[key] = (map[key] || 0) + 1;
+        }
+
+        const entries = Object.entries(map).map(([k, c]) => {
+            const v = k.split(',').map(Number);
+            return { r: v[0], g: v[1], b: v[2], a: v[3], count: c };
+        });
+        entries.sort((a, b) => b.count - a.count);
+
+        const dominant = [];
+        const thr2 = threshold * threshold;
+        for (const c of entries) {
+            let merged = false;
+            for (const d of dominant) {
+                const dr = c.r - d.r, dg = c.g - d.g, db = c.b - d.b, da = c.a - d.a;
+                if (dr * dr + dg * dg + db * db + da * da < thr2) { merged = true; break; }
+            }
+            if (!merged) dominant.push(c);
+        }
+
+        const result = new Uint8ClampedArray(pixels.length);
+        for (let i = 0; i < pixels.length; i += 4) {
+            const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2], a = pixels[i + 3];
+            if (a === 0) { result[i + 3] = 0; continue; }
+            let bestDist = Infinity, best = dominant[0];
+            for (const d of dominant) {
+                const dr = r - d.r, dg = g - d.g, db = b - d.b, da = a - d.a;
+                const dist = dr * dr + dg * dg + db * db + da * da;
+                if (dist < bestDist) { bestDist = dist; best = d; }
+            }
+            result[i] = best.r; result[i + 1] = best.g; result[i + 2] = best.b; result[i + 3] = best.a;
+        }
+        return result;
+    }
+
     function getGridConfig() {
         let gridW = null, gridH = null;
         if (gridWMode.value === 'power2') gridW = parseInt(gridWVal.value);
@@ -624,6 +668,10 @@ function initPerfectPixel() {
             outData = sampleMedian(imageData, xCoords, yCoords);
         } else {
             outData = sampleCenter(imageData, xCoords, yCoords);
+        }
+
+        if (denoiseCheck.checked) {
+            outData = mergeSimilarColors(outData, outW, outH, parseInt(denoiseThr.value));
         }
 
         return {
@@ -887,6 +935,11 @@ function initPerfectPixel() {
     gridWMode.addEventListener('change', () => gridWVal.style.display = gridWMode.value === 'power2' ? '' : 'none');
     gridHMode.addEventListener('change', () => gridHVal.style.display = gridHMode.value === 'power2' ? '' : 'none');
     refineSlider.addEventListener('input', () => refineVal.textContent = (parseInt(refineSlider.value) / 100).toFixed(2));
+
+    denoiseCheck.addEventListener('change', () => {
+        denoiseThr.disabled = !denoiseCheck.checked;
+    });
+    denoiseThr.addEventListener('input', () => denoiseThrVal.textContent = denoiseThr.value);
 
     processBtn.addEventListener('click', processAll);
     resetBtn.addEventListener('click', resetAll);
