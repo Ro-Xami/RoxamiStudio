@@ -812,6 +812,8 @@ function initPerfectPixel() {
         }
         frameCounter.textContent = `帧: ${idx + 1} / ${uploadedImages.length}`;
         previewSection.style.display = 'block';
+        enablePreviewZoom(document.getElementById('pp-original-preview'));
+        enablePreviewZoom(document.getElementById('pp-result-preview'));
     }
 
     function updatePlayButtons() {

@@ -235,6 +235,8 @@ function initImageFlipper() {
         }
 
         previewSection.style.display = 'block';
+        enablePreviewZoom(originalPreview);
+        enablePreviewZoom(resultPreview);
     }
 
     function resetAll() {

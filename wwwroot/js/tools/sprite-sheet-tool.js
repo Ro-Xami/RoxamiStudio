@@ -374,6 +374,7 @@ function initSpriteSheetTool() {
             // 显示预览
             splitPreviewImage.src = url;
             splitPreviewSection.style.display = 'block';
+            enablePreviewZoom(document.getElementById('split-preview-container'));
 
             showNotification(`序列图集 "${file.name}" 上传成功，尺寸: ${img.width}×${img.height}`, 'success');
         };

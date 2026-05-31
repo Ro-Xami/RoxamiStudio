@@ -1064,6 +1064,111 @@ function updateCurrentToolName() {
     }
 }
 
+function enablePreviewZoom(container) {
+    if (!container || container.dataset.zoomable === 'true') return;
+    const target = container.querySelector('img, canvas, video');
+    if (!target || target.tagName === 'CANVAS') return;
+
+    container.dataset.zoomable = 'true';
+    container.style.overflow = 'hidden';
+    container.style.position = container.style.position || 'relative';
+    container.style.cursor = 'grab';
+    container.style.touchAction = 'none';
+    target.style.transformOrigin = '0 0';
+
+    const controls = document.createElement('div');
+    controls.className = 'preview-zoom-controls';
+    controls.innerHTML = `
+        <button class="preview-zoom-btn" data-zoom="in" title="放大">+</button>
+        <button class="preview-zoom-btn" data-zoom="out" title="缩小">−</button>
+        <button class="preview-zoom-btn" data-zoom="reset" title="重置">⊡</button>
+    `;
+    container.appendChild(controls);
+
+    let scale = 1, tx = 0, ty = 0;
+    let dragging = false, dragX = 0, dragY = 0;
+
+    function apply() {
+        target.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+    }
+
+    function clamp() {
+        const cw = container.clientWidth, ch = container.clientHeight;
+        const iw = (target.naturalWidth || target.width || 1) * scale;
+        const ih = (target.naturalHeight || target.height || 1) * scale;
+        tx = iw > cw ? Math.max(cw - iw - 50, Math.min(50, tx)) : (cw - iw) / 2;
+        ty = ih > ch ? Math.max(ch - ih - 50, Math.min(50, ty)) : (ch - ih) / 2;
+        apply();
+    }
+
+    function fit() {
+        const cw = container.clientWidth, ch = container.clientHeight;
+        const iw = target.naturalWidth || target.width;
+        const ih = target.naturalHeight || target.height;
+        if (iw && ih) {
+            scale = Math.min(cw / iw, ch / ih, 1);
+            tx = (cw - iw * scale) / 2;
+            ty = (ch - ih * scale) / 2;
+        } else {
+            scale = 1; tx = 0; ty = 0;
+        }
+        apply();
+    }
+
+    function zoomAt(cx, cy, factor) {
+        const prev = scale;
+        scale = Math.max(0.1, Math.min(10, scale * factor));
+        tx = cx - (cx - tx) * (scale / prev);
+        ty = cy - (cy - ty) * (scale / prev);
+        clamp();
+    }
+
+    container.addEventListener('wheel', e => {
+        e.preventDefault();
+        const r = container.getBoundingClientRect();
+        zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.1 : 0.9);
+    }, { passive: false });
+
+    container.addEventListener('mousedown', e => {
+        if (e.button !== 0) return;
+        dragging = true;
+        dragX = e.clientX - tx;
+        dragY = e.clientY - ty;
+        container.style.cursor = 'grabbing';
+        e.preventDefault();
+    });
+
+    window.addEventListener('mousemove', e => {
+        if (!dragging) return;
+        tx = e.clientX - dragX;
+        ty = e.clientY - dragY;
+        clamp();
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (dragging) { dragging = false; container.style.cursor = 'grab'; }
+    });
+
+    container.addEventListener('dblclick', e => { e.preventDefault(); fit(); });
+
+    controls.querySelector('[data-zoom="in"]').addEventListener('click', e => {
+        e.stopPropagation();
+        const r = container.getBoundingClientRect();
+        zoomAt(r.width / 2, r.height / 2, 1.25);
+    });
+    controls.querySelector('[data-zoom="out"]').addEventListener('click', e => {
+        e.stopPropagation();
+        const r = container.getBoundingClientRect();
+        zoomAt(r.width / 2, r.height / 2, 0.8);
+    });
+    controls.querySelector('[data-zoom="reset"]').addEventListener('click', e => {
+        e.stopPropagation(); fit();
+    });
+
+    target.addEventListener('load', fit, { once: true });
+    if (target.complete && target.naturalWidth > 0) fit();
+}
+
 // Export for potential module usage
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
@@ -1071,6 +1176,7 @@ if (typeof module !== 'undefined' && module.exports) {
         initThemeToggle,
         initSidebarToggle,
         initLanguageToggle,
-        showNotification
+        showNotification,
+        enablePreviewZoom
     };
 }
