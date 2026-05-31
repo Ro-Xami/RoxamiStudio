@@ -456,7 +456,7 @@ body {
 /* JSON Formatter Specific Styles */
 .tool-ui {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: var(--spacing-xl);
     margin-bottom: var(--spacing-xl);
 }
@@ -846,12 +846,18 @@ body {
 
 .model-preview {
     width: 100%;
-    height: 300px;
+    min-height: 150px;
+    height: auto;
     border-radius: var(--radius-md);
     border: 1px solid var(--color-border);
     background-color: var(--color-bg-tertiary);
     overflow: hidden;
     position: relative;
+}
+
+.model-preview canvas,
+.model-preview video {
+    height: 300px;
 }
 
 .model-preview canvas {
@@ -1082,7 +1088,6 @@ body {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     padding: var(--spacing-sm);
-    min-height: 200px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1092,7 +1097,6 @@ body {
 
 .comparison-image img {
     max-width: 100%;
-    max-height: 300px;
     object-fit: contain;
     border-radius: var(--radius-sm);
 }
