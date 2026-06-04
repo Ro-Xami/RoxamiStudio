@@ -648,6 +648,7 @@
                                         <select id="pp-grid-w-mode" class="select-input">
                                             <option value="auto">自动检测</option>
                                             <option value="power2">2的次幂</option>
+                                            <option value="manual">手动输入</option>
                                         </select>
                                         <select id="pp-grid-w-val" class="select-input" style="display:none;">
                                             <option value="32">32</option>
@@ -658,12 +659,14 @@
                                             <option value="1024">1024</option>
                                             <option value="2048">2048</option>
                                         </select>
+                                        <input type="number" id="pp-grid-w-manual" class="number-input" min="1" max="4096" value="256" style="display:none;">
                                     </div>
                                     <div class="setting-row">
                                         <label><i class="fas fa-arrows-alt-v"></i> 网格高度:</label>
                                         <select id="pp-grid-h-mode" class="select-input">
                                             <option value="auto">自动检测</option>
                                             <option value="power2">2的次幂</option>
+                                            <option value="manual">手动输入</option>
                                         </select>
                                         <select id="pp-grid-h-val" class="select-input" style="display:none;">
                                             <option value="32">32</option>
@@ -674,6 +677,7 @@
                                             <option value="1024">1024</option>
                                             <option value="2048">2048</option>
                                         </select>
+                                        <input type="number" id="pp-grid-h-manual" class="number-input" min="1" max="4096" value="256" style="display:none;">
                                     </div>
                                     <div class="setting-row">
                                         <label><i class="fas fa-eyedropper"></i> 采样方法:</label>

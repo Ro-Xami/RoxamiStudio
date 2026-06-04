@@ -7,8 +7,10 @@ function initPerfectPixel() {
     const totalSizeEl = document.getElementById('pp-total-size');
     const gridWMode = document.getElementById('pp-grid-w-mode');
     const gridWVal = document.getElementById('pp-grid-w-val');
+    const gridWManual = document.getElementById('pp-grid-w-manual');
     const gridHMode = document.getElementById('pp-grid-h-mode');
     const gridHVal = document.getElementById('pp-grid-h-val');
+    const gridHManual = document.getElementById('pp-grid-h-manual');
     const sampleMethod = document.getElementById('pp-sample-method');
     const refineSlider = document.getElementById('pp-refine');
     const refineVal = document.getElementById('pp-refine-val');
@@ -623,7 +625,9 @@ function initPerfectPixel() {
     function getGridConfig() {
         let gridW = null, gridH = null;
         if (gridWMode.value === 'power2') gridW = parseInt(gridWVal.value);
+        if (gridWMode.value === 'manual') gridW = parseInt(gridWManual.value) || null;
         if (gridHMode.value === 'power2') gridH = parseInt(gridHVal.value);
+        if (gridHMode.value === 'manual') gridH = parseInt(gridHManual.value) || null;
         return { gridW, gridH };
     }
 
@@ -934,8 +938,14 @@ function initPerfectPixel() {
         if (this.files.length > 0) processUpload(this.files);
     });
 
-    gridWMode.addEventListener('change', () => gridWVal.style.display = gridWMode.value === 'power2' ? '' : 'none');
-    gridHMode.addEventListener('change', () => gridHVal.style.display = gridHMode.value === 'power2' ? '' : 'none');
+    gridWMode.addEventListener('change', () => {
+        gridWVal.style.display = gridWMode.value === 'power2' ? '' : 'none';
+        gridWManual.style.display = gridWMode.value === 'manual' ? '' : 'none';
+    });
+    gridHMode.addEventListener('change', () => {
+        gridHVal.style.display = gridHMode.value === 'power2' ? '' : 'none';
+        gridHManual.style.display = gridHMode.value === 'manual' ? '' : 'none';
+    });
     refineSlider.addEventListener('input', () => refineVal.textContent = (parseInt(refineSlider.value) / 100).toFixed(2));
 
     denoiseCheck.addEventListener('change', () => {
