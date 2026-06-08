@@ -44,7 +44,16 @@
                 </div>
                 <div class="tool-list">
                     <!-- Tool items will be dynamically populated by JavaScript -->
-                    <div class="tool-item active" data-tool="3d-converter">
+                    <div class="tool-item active" data-tool="blueprint">
+                        <div class="tool-icon">
+                            <i class="fas fa-project-diagram"></i>
+                        </div>
+                        <div class="tool-info">
+                            <h3>蓝图节点</h3>
+                            <p>可视化节点处理素材</p>
+                        </div>
+                    </div>
+                    <div class="tool-item" data-tool="3d-converter">
                         <div class="tool-icon">
                             <i class="fas fa-cube"></i>
                         </div>
@@ -107,7 +116,7 @@
                     <div class="breadcrumb">
                         <span>工具</span>
                         <i class="fas fa-chevron-right"></i>
-                        <span id="current-tool-name">3D 转换器</span>
+                        <span id="current-tool-name">蓝图节点</span>
                     </div>
                     <div class="tool-actions">
                     </div>
@@ -115,7 +124,7 @@
 
                 <div class="tool-container">
                     <!-- Tool content will be loaded here dynamically -->
-                    <div class="tool-placeholder active" id="3d-converter">
+                    <div class="tool-placeholder" id="3d-converter">
                         <div class="placeholder-header">
                             <h2><i class="fas fa-cube"></i> 3D 模型转换器</h2>
                             <p>将 GLB 文件转换为 OBJ 格式，并提取纹理。</p>
@@ -763,7 +772,65 @@
                         <div class="tool-info-box">
                             <h4><i class="fas fa-info-circle"></i> 关于完美像素</h4>
                             <p>此工具将模糊的AI生成像素图精炼为干净完美的像素图。通过自动检测像素网格或手动指定2的次幂分辨率，结合边缘精炼和多种采样方法，输出清晰的像素艺术作品。算法参考 <a href="https://github.com/theamusing/perfectPixel" target="_blank">perfectPixel</a>。</p>
-                            <p><strong>注意：</strong>处理大尺寸图片可能耗时较长。所有处理均在浏览器本地完成，数据不会发送到服务器。</p>
+                            <p><strong>注意：</strong>处理大尺寸图片可能耗时较长。                            所有处理均在浏览器本地完成，数据不会发送到服务器。</p>
+                        </div>
+                    </div>
+
+                    <!-- Blueprint Node Editor -->
+                    <div class="tool-placeholder active" id="blueprint">
+                        <div class="placeholder-header">
+                            <h2><i class="fas fa-project-diagram"></i> 蓝图节点</h2>
+                            <p>可视化节点编辑器，通过连接节点来构建素材处理流水线。</p>
+                        </div>
+                        <div class="bp-main-container">
+                            <div class="bp-workspace">
+                                <div class="bp-canvas" id="bp-canvas">
+                                    <svg class="bp-connections" id="bp-connections"></svg>
+                                    <div class="bp-viewport" id="bp-viewport">
+                                        <div class="bp-nodes" id="bp-nodes"></div>
+                                    </div>
+                                </div>
+                                <div class="bp-palette" id="bp-palette">
+                                    <div class="bp-palette-header">节点列表</div>
+                                    <div class="bp-palette-list" id="bp-palette-list"></div>
+                                </div>
+                            </div>
+                            <div class="bp-context-menu" id="bp-context-menu" style="display:none;">
+                                <input type="text" class="bp-search-input" id="bp-search-input" placeholder="搜索节点...">
+                                <div class="bp-search-results" id="bp-search-results"></div>
+                            </div>
+                            <div class="bp-toolbar">
+                                <button class="bp-btn-execute" id="bp-execute-btn">
+                                    <i class="fas fa-play"></i> 执行
+                                </button>
+                                <button class="bp-btn-execute" id="bp-preview-btn" style="background:var(--color-accent-blue);">
+                                    <i class="fas fa-sync-alt"></i> 刷新预览
+                                </button>
+                                <button class="bp-btn-clear" id="bp-clear-btn">
+                                    <i class="fas fa-trash-alt"></i> 清空画布
+                                </button>
+                                <button class="bp-btn-clear" id="bp-save-btn">
+                                    <i class="fas fa-save"></i> 保存
+                                </button>
+                                <button class="bp-btn-clear" id="bp-load-btn">
+                                    <i class="fas fa-folder-open"></i> 加载
+                                </button>
+                                <span style="width:1px;height:20px;background:var(--color-border);margin:0 4px;"></span>
+                                <label class="bp-toggle-label" id="bp-realtime-label">
+                                    <span class="bp-toggle-switch" id="bp-realtime-toggle"></span>
+                                    <span>实时预览</span>
+                                </label>
+                                <span style="flex:1"></span>
+                                <p style="font-size:0.7rem;color:var(--color-text-tertiary);margin:0;">
+                                    右键画布搜索 | 拖拽添加 | 端口拖线连接 | Delete删除
+                                </p>
+                            </div>
+                        </div>
+                        <div class="bp-preview-modal" id="bp-preview-modal"></div>
+                        <div class="tool-info-box">
+                            <h4><i class="fas fa-info-circle"></i> 关于蓝图节点</h4>
+                            <p>蓝图节点是一个可视化编程工具，通过拖拽和连接节点来构建素材处理流水线。支持加载图片、调整大小、翻转旋转、裁剪、色彩调整、灰度化、阈值、混合和导出等操作。</p>
+                            <p><strong>操作提示：</strong>从右侧面板拖拽节点到画布，或在画布上右键搜索节点。从节点输出端口拖线到输入端口建立连接。点击执行按钮运行整个流程。所有处理均在浏览器本地完成。</p>
                         </div>
                     </div>
                 </div>
@@ -796,6 +863,7 @@
     <script src="wwwroot/js/tools/sprite-sheet-tool.js"></script>
     <script src="wwwroot/js/tools/image-flipper.js"></script>
     <script src="wwwroot/js/tools/perfect-pixel.js"></script>
+    <script src="wwwroot/js/tools/blueprint.js"></script>
     <script src="wwwroot/js/app.js"></script>
 </body>
 </html>

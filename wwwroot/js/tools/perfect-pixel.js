@@ -632,8 +632,14 @@ function initPerfectPixel() {
     }
 
     function processSingleImage(imageData, gridW, gridH) {
-        const refine = parseInt(refineSlider.value) / 100;
-        const method = sampleMethod.value;
+        return processSingleImageEx(imageData, gridW, gridH, null, null, null, null);
+    }
+
+    function processSingleImageEx(imageData, gridW, gridH, refineOverride, methodOverride, denoiseOverride, denoiseThrOverride) {
+        const refine = refineOverride !== null ? refineOverride : parseInt(refineSlider.value) / 100;
+        const method = methodOverride || sampleMethod.value;
+        const useDenoise = denoiseOverride !== null ? denoiseOverride : denoiseCheck.checked;
+        const denoiseT = denoiseThrOverride !== null ? denoiseThrOverride : parseInt(denoiseThr.value);
 
         let xCoords, yCoords;
 
@@ -674,8 +680,8 @@ function initPerfectPixel() {
             outData = sampleCenter(imageData, xCoords, yCoords);
         }
 
-        if (denoiseCheck.checked) {
-            outData = mergeSimilarColors(outData, outW, outH, parseInt(denoiseThr.value));
+        if (useDenoise) {
+            outData = mergeSimilarColors(outData, outW, outH, denoiseT);
         }
 
         return {
@@ -983,4 +989,6 @@ function initPerfectPixel() {
     window.addEventListener('beforeunload', () => {
         uploadedImages.forEach(img => { if (img.url && img.url.startsWith('blob:')) URL.revokeObjectURL(img.url); });
     });
+
+    window.perfectPixelProcess = processSingleImageEx;
 }

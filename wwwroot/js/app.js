@@ -147,6 +147,12 @@ const translations = {
         'perfectPixel': '完美像素',
         'perfectPixelDesc': '像素图精炼与网格重采样',
 
+        // Blueprint tool
+        'blueprint': '蓝图节点',
+        'blueprintDesc': '可视化节点处理素材',
+        'blueprintTitle': '蓝图节点',
+        'blueprintSubtitle': '可视化节点编辑器，通过连接节点来构建素材处理流水线。',
+
         // Footer
         'footerText': '所有处理均在您的浏览器中进行。数据不会发送到服务器。',
         'copyright': '© 2026 Roxami Studio',
@@ -194,6 +200,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initSpriteSheetTool();
     initImageFlipper();
     initPerfectPixel();
+    initBlueprint();
     initLanguageToggle();
 
     // Set initial active tool
@@ -250,6 +257,9 @@ function initToolSwitcher() {
                             break;
                         case 'perfect-pixel':
                             applyPerfectPixelTranslations(langData);
+                            break;
+                        case 'blueprint':
+                            applyBlueprintTranslations(langData);
                             break;
                     }
                 }
@@ -553,6 +563,9 @@ function applyTranslations(language) {
         } else if (toolId === 'perfect-pixel' && titleElement && descElement) {
             titleElement.textContent = preserveProperNouns(langData.perfectPixel);
             descElement.textContent = preserveProperNouns(langData.perfectPixelDesc);
+        } else if (toolId === 'blueprint' && titleElement && descElement) {
+            titleElement.textContent = preserveProperNouns(langData.blueprint);
+            descElement.textContent = preserveProperNouns(langData.blueprintDesc);
         }
     });
 
@@ -594,6 +607,8 @@ function applyTranslations(language) {
             applyImageFlipperTranslations(langData);
         } else if (toolId === 'perfect-pixel') {
             applyPerfectPixelTranslations(langData);
+        } else if (toolId === 'blueprint') {
+            applyBlueprintTranslations(langData);
         }
     }
 
@@ -993,6 +1008,16 @@ function applyPerfectPixelTranslations(langData) {
     }
 }
 
+function applyBlueprintTranslations(langData) {
+    const placeholderHeader = document.querySelector('#blueprint .placeholder-header');
+    if (placeholderHeader) {
+        const h2 = placeholderHeader.querySelector('h2');
+        const p = placeholderHeader.querySelector('p:first-of-type');
+        if (h2) h2.innerHTML = `<i class="fas fa-project-diagram"></i> ${preserveProperNouns(langData.blueprintTitle || langData.blueprint)}`;
+        if (p) p.textContent = preserveProperNouns(langData.blueprintSubtitle || langData.blueprintDesc);
+    }
+}
+
 // Helper function to preserve proper nouns in translated text
 function preserveProperNouns(text) {
     if (currentLanguage === 'en') return text; // No need to process for English
@@ -1054,6 +1079,9 @@ function updateCurrentToolName() {
                     break;
                 case 'perfect-pixel':
                     toolName = langData.perfectPixel;
+                    break;
+                case 'blueprint':
+                    toolName = langData.blueprint;
                     break;
                 default:
                     toolName = 'Unknown Tool';
