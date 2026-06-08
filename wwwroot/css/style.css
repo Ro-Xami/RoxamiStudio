@@ -1529,15 +1529,36 @@ body {
 }
 
 .bp-node-body {
-    padding: 4px 0;
+    padding: 0;
     position: relative;
+}
+
+/* Ports bar at top of node */
+.bp-ports-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 6px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.bp-ports-left {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.bp-ports-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .bp-port {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 3px 8px;
+    gap: 4px;
+    padding: 1px 0;
     font-size: 0.7rem;
     color: var(--color-text-secondary);
     cursor: default;
@@ -1725,6 +1746,51 @@ body {
     font-size: 0.8rem;
 }
 
+/* Palette category headers */
+.bp-palette-category {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+    user-select: none;
+    transition: color var(--transition-fast);
+}
+
+.bp-palette-category:hover {
+    color: var(--color-text-secondary);
+}
+
+.bp-palette-category span:first-child {
+    flex: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.bp-palette-category i {
+    font-size: 0.55rem;
+    transition: transform var(--transition-fast);
+}
+
+.bp-palette-category.collapsed i {
+    transform: rotate(-90deg);
+}
+
+.bp-palette-category-items {
+    overflow: hidden;
+    transition: max-height var(--transition-normal), opacity var(--transition-fast);
+    max-height: 600px;
+    opacity: 1;
+}
+
+.bp-palette-category-items.collapsed {
+    max-height: 0;
+    opacity: 0;
+}
+
 /* Context Menu */
 .bp-context-menu {
     position: fixed;
@@ -1776,6 +1842,15 @@ body {
 .bp-search-item i {
     width: 16px;
     text-align: center;
+}
+
+.bp-search-cat {
+    margin-left: auto;
+    font-size: 0.6rem;
+    color: var(--color-text-tertiary);
+    background: var(--color-bg-tertiary);
+    padding: 1px 5px;
+    border-radius: 3px;
 }
 
 /* Toolbar */

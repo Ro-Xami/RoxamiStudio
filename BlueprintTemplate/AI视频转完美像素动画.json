@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "timestamp": "2026-06-08T15:03:00.341Z",
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "video-frames",
+      "x": 213,
+      "y": 256,
+      "params": {
+        "fps": 12
+      }
+    },
+    {
+      "id": "n2",
+      "type": "perfect-pixel",
+      "x": 494,
+      "y": 262,
+      "params": {
+        "gridWMode": "power2",
+        "gridW": "256",
+        "gridWManual": 256,
+        "gridHMode": "power2",
+        "gridH": "256",
+        "gridHManual": 256,
+        "method": "majority",
+        "refine": 25,
+        "denoise": false,
+        "denoiseThreshold": 15
+      }
+    },
+    {
+      "id": "n3",
+      "type": "file-sort",
+      "x": 768,
+      "y": 260,
+      "params": {
+        "prefix": "output_",
+        "startIndex": 0,
+        "digits": 3
+      }
+    },
+    {
+      "id": "n4",
+      "type": "export",
+      "x": 1062,
+      "y": 258,
+      "params": {
+        "format": "image/png",
+        "quality": 92
+      }
+    }
+  ],
+  "connections": [
+    {
+      "fromNodeId": "n1",
+      "fromPort": "帧序列",
+      "toNodeId": "n2",
+      "toPort": "图片"
+    },
+    {
+      "fromNodeId": "n2",
+      "fromPort": "图片",
+      "toNodeId": "n3",
+      "toPort": "图片"
+    },
+    {
+      "fromNodeId": "n3",
+      "fromPort": "图片",
+      "toNodeId": "n4",
+      "toPort": "图片"
+    }
+  ],
+  "nextNodeId": 5,
+  "nextConnId": 4
+}

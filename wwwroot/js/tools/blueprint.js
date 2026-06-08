@@ -26,52 +26,48 @@ function initBlueprint() {
     if (!canvas || !svgLayer || !nodesLayer) return;
 
     const NODE_TYPES = {
-        'load-image': { name: '加载图片', icon: 'fa-image', color: '#4caf50', inputs: [], outputs: [{ name: '图片', type: 'image' }], params: [] },
-        'resize': { name: '调整大小', icon: 'fa-expand', color: '#2196f3', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
+        'load-image': { category: '输入', name: '加载图片', icon: 'fa-image', color: '#4caf50', inputs: [], outputs: [{ name: '图片', type: 'image' }], params: [] },
+        'video-frames': { category: '输入', name: '提取视频帧', icon: 'fa-film', color: '#e91e63', inputs: [], outputs: [{ name: '帧序列', type: 'image' }], params: [
+            { name: 'FPS', key: 'fps', type: 'number', default: 24, min: 1, max: 60 }
+        ]},
+        'resize': { category: '变换', name: '调整大小', icon: 'fa-expand', color: '#2196f3', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
             { name: '宽度', key: 'width', type: 'number', default: 512, min: 1, max: 4096 },
             { name: '高度', key: 'height', type: 'number', default: 512, min: 1, max: 4096 }
         ]},
-        'flip-rotate': { name: '翻转/旋转', icon: 'fa-arrows-alt-h', color: '#ff9800', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
+        'flip-rotate': { category: '变换', name: '翻转/旋转', icon: 'fa-arrows-alt-h', color: '#ff9800', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
             { name: '水平翻转', key: 'flipH', type: 'checkbox', default: false },
             { name: '垂直翻转', key: 'flipV', type: 'checkbox', default: false },
             { name: '旋转', key: 'rotate', type: 'select', default: '0', options: ['0', '90', '180', '270'] }
         ]},
-        'crop': { name: '裁剪', icon: 'fa-crop', color: '#9c27b0', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
+        'crop': { category: '变换', name: '裁剪', icon: 'fa-crop', color: '#9c27b0', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
             { name: 'X', key: 'x', type: 'number', default: 0, min: 0, max: 4096 },
             { name: 'Y', key: 'y', type: 'number', default: 0, min: 0, max: 4096 },
             { name: '宽度', key: 'w', type: 'number', default: 256, min: 1, max: 4096 },
             { name: '高度', key: 'h', type: 'number', default: 256, min: 1, max: 4096 }
         ]},
-        'color-adjust': { name: '色彩调整', icon: 'fa-palette', color: '#e91e63', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
+        'color-adjust': { category: '调色', name: '色彩调整', icon: 'fa-palette', color: '#e91e63', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
             { name: '亮度', key: 'brightness', type: 'range', default: 0, min: -100, max: 100 },
             { name: '对比度', key: 'contrast', type: 'range', default: 0, min: -100, max: 100 },
             { name: '饱和度', key: 'saturation', type: 'range', default: 0, min: -100, max: 100 }
         ]},
-        'grayscale': { name: '灰度化', icon: 'fa-adjust', color: '#607d8b', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [] },
-        'threshold': { name: '阈值', icon: 'fa-circle-half-stroke', color: '#795548', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
+        'grayscale': { category: '调色', name: '灰度化', icon: 'fa-adjust', color: '#607d8b', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [] },
+        'threshold': { category: '调色', name: '阈值', icon: 'fa-circle-half-stroke', color: '#795548', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
             { name: '阈值', key: 'value', type: 'range', default: 128, min: 0, max: 255 }
         ]},
-        'blend': { name: '混合', icon: 'fa-layer-group', color: '#00bcd4', inputs: [{ name: '图片A', type: 'image' }, { name: '图片B', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
+        'blend': { category: '调色', name: '混合', icon: 'fa-layer-group', color: '#00bcd4', inputs: [{ name: '图片A', type: 'image' }, { name: '图片B', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
             { name: '模式', key: 'mode', type: 'select', default: 'normal', options: ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten'] },
             { name: '透明度', key: 'opacity', type: 'range', default: 100, min: 0, max: 100 }
         ]},
-        'export': { name: '导出', icon: 'fa-download', color: '#f44336', inputs: [{ name: '图片', type: 'image' }], outputs: [], params: [
-            { name: '格式', key: 'format', type: 'select', default: 'image/png', options: ['image/png', 'image/jpeg', 'image/webp'] },
-            { name: '质量', key: 'quality', type: 'range', default: 92, min: 10, max: 100 }
-        ]},
-        'video-frames': { name: '提取视频帧', icon: 'fa-film', color: '#e91e63', inputs: [], outputs: [{ name: '帧序列', type: 'image' }], params: [
-            { name: 'FPS', key: 'fps', type: 'number', default: 24, min: 1, max: 60 }
-        ]},
-        'sprite-merge': { name: '合并图集', icon: 'fa-table-cells', color: '#ff5722', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图集', type: 'image' }], params: [
+        'sprite-merge': { category: '图集', name: '合并图集', icon: 'fa-table-cells', color: '#ff5722', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图集', type: 'image' }], params: [
             { name: '行数', key: 'rows', type: 'number', default: 4, min: 1, max: 100 },
             { name: '方向', key: 'direction', type: 'select', default: 'lr-tb', options: ['lr-tb', 'rl-tb', 'lr-bt', 'rl-bt'] }
         ]},
-        'sprite-split': { name: '拆分图集', icon: 'fa-border-all', color: '#ff5722', inputs: [{ name: '图集', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
+        'sprite-split': { category: '图集', name: '拆分图集', icon: 'fa-border-all', color: '#ff5722', inputs: [{ name: '图集', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
             { name: '行数', key: 'rows', type: 'number', default: 4, min: 1, max: 100 },
             { name: '列数', key: 'cols', type: 'number', default: 4, min: 1, max: 100 },
             { name: '方向', key: 'direction', type: 'select', default: 'lr-tb', options: ['lr-tb', 'rl-tb', 'lr-bt', 'rl-bt'] }
         ]},
-        'perfect-pixel': { name: '完美像素', icon: 'fa-th', color: '#9c27b0', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
+        'perfect-pixel': { category: '特效', name: '完美像素', icon: 'fa-th', color: '#9c27b0', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
             { name: '网格宽度', key: 'gridWMode', type: 'select', default: 'auto', options: ['auto', 'power2', 'manual'] },
             { name: '宽度(power2)', key: 'gridW', type: 'select', default: '256', options: ['32', '64', '128', '256', '512', '1024', '2048'] },
             { name: '宽度(手动)', key: 'gridWManual', type: 'number', default: 256, min: 1, max: 4096 },
@@ -83,7 +79,11 @@ function initBlueprint() {
             { name: '减少杂色', key: 'denoise', type: 'checkbox', default: false },
             { name: '阈值', key: 'denoiseThreshold', type: 'range', default: 15, min: 1, max: 100 }
         ]},
-        'file-sort': { name: '排序/重命名', icon: 'fa-sort-alpha-down', color: '#607d8b', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
+        'export': { category: '输出', name: '导出', icon: 'fa-download', color: '#f44336', inputs: [{ name: '图片', type: 'image' }], outputs: [], params: [
+            { name: '格式', key: 'format', type: 'select', default: 'image/png', options: ['image/png', 'image/jpeg', 'image/webp'] },
+            { name: '质量', key: 'quality', type: 'range', default: 92, min: 10, max: 100 }
+        ]},
+        'file-sort': { category: '输出', name: '排序/重命名', icon: 'fa-sort-alpha-down', color: '#607d8b', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
             { name: '前缀', key: 'prefix', type: 'text', default: 'output_' },
             { name: '起始编号', key: 'startIndex', type: 'number', default: 0, min: 0, max: 9999 },
             { name: '位数', key: 'digits', type: 'number', default: 3, min: 1, max: 6 }
@@ -151,12 +151,26 @@ function initBlueprint() {
         </div>
         <div class="bp-node-body">`;
 
-        typeDef.inputs.forEach((input, i) => {
-            html += `<div class="bp-port bp-port-input" data-node-id="${node.id}" data-port-name="${input.name}" data-port-type="input">
-                <span class="bp-port-dot"></span>
-                <span class="bp-port-label">${input.name}</span>
-            </div>`;
-        });
+        // Ports bar at top
+        if (typeDef.inputs.length > 0 || typeDef.outputs.length > 0) {
+            html += '<div class="bp-ports-bar">';
+            html += '<div class="bp-ports-left">';
+            typeDef.inputs.forEach((input, i) => {
+                html += `<div class="bp-port bp-port-input" data-node-id="${node.id}" data-port-name="${input.name}" data-port-type="input">
+                    <span class="bp-port-dot"></span>
+                    <span class="bp-port-label">${input.name}</span>
+                </div>`;
+            });
+            html += '</div>';
+            html += '<div class="bp-ports-right">';
+            typeDef.outputs.forEach((output, i) => {
+                html += `<div class="bp-port bp-port-output" data-node-id="${node.id}" data-port-name="${output.name}" data-port-type="output">
+                    <span class="bp-port-label">${output.name}</span>
+                    <span class="bp-port-dot"></span>
+                </div>`;
+            });
+            html += '</div></div>';
+        }
 
         if (typeDef.params.length > 0) {
             html += '<div class="bp-node-params">';
@@ -178,13 +192,6 @@ function initBlueprint() {
         }
 
         html += '<div class="bp-node-preview"><span class="bp-node-preview-label">预览</span></div>';
-
-        typeDef.outputs.forEach((output, i) => {
-            html += `<div class="bp-port bp-port-output" data-node-id="${node.id}" data-port-name="${output.name}" data-port-type="output">
-                <span class="bp-port-label">${output.name}</span>
-                <span class="bp-port-dot"></span>
-            </div>`;
-        });
 
         html += '</div>';
         el.innerHTML = html;
@@ -464,7 +471,7 @@ function initBlueprint() {
         types.forEach(([key, def]) => {
             const item = document.createElement('div');
             item.className = 'bp-search-item';
-            item.innerHTML = `<i class="fas ${def.icon}" style="color:${def.color}"></i><span>${def.name}</span>`;
+            item.innerHTML = `<i class="fas ${def.icon}" style="color:${def.color}"></i><span>${def.name}</span><span class="bp-search-cat">${def.category || ''}</span>`;
             item.addEventListener('mousedown', e => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -500,17 +507,40 @@ function initBlueprint() {
 
     function populatePalette() {
         paletteList.innerHTML = '';
+        const categories = {};
         Object.entries(NODE_TYPES).forEach(([key, def]) => {
-            const item = document.createElement('div');
-            item.className = 'bp-palette-item';
-            item.draggable = true;
-            item.dataset.nodeType = key;
-            item.innerHTML = `<i class="fas ${def.icon}" style="color:${def.color}"></i><span>${def.name}</span>`;
-            item.addEventListener('dragstart', e => {
-                e.dataTransfer.setData('text/plain', key);
-                e.dataTransfer.effectAllowed = 'copy';
+            const cat = def.category || '其他';
+            if (!categories[cat]) categories[cat] = [];
+            categories[cat].push([key, def]);
+        });
+        const catOrder = ['输入', '变换', '调色', '图集', '特效', '输出'];
+        catOrder.forEach(cat => {
+            if (!categories[cat]) return;
+            const header = document.createElement('div');
+            header.className = 'bp-palette-category';
+            header.innerHTML = `<span>${cat}</span><i class="fas fa-chevron-down"></i>`;
+            const itemsDiv = document.createElement('div');
+            itemsDiv.className = 'bp-palette-category-items';
+            categories[cat].forEach(([key, def]) => {
+                const item = document.createElement('div');
+                item.className = 'bp-palette-item';
+                item.draggable = true;
+                item.dataset.nodeType = key;
+                item.innerHTML = `<i class="fas ${def.icon}" style="color:${def.color}"></i><span>${def.name}</span>`;
+                item.addEventListener('dragstart', e => {
+                    e.dataTransfer.setData('text/plain', key);
+                    e.dataTransfer.effectAllowed = 'copy';
+                });
+                itemsDiv.appendChild(item);
             });
-            paletteList.appendChild(item);
+            header.addEventListener('click', () => {
+                itemsDiv.classList.toggle('collapsed');
+                header.classList.toggle('collapsed');
+            });
+            itemsDiv.classList.add('collapsed');
+            header.classList.add('collapsed');
+            paletteList.appendChild(header);
+            paletteList.appendChild(itemsDiv);
         });
     }
 
@@ -1134,7 +1164,7 @@ function initBlueprint() {
                 speedLabel.textContent = '速度:';
                 playBar.appendChild(speedLabel);
                 const speedSel = document.createElement('select');
-                speedSel.innerHTML = '<option value="100">100ms</option><option value="250">250ms</option><option value="500" selected>500ms</option><option value="1000">1000ms</option>';
+                speedSel.innerHTML = '<option value="100" selected>100ms</option><option value="250">250ms</option><option value="500">500ms</option><option value="1000">1000ms</option>';
                 speedSel.addEventListener('change', () => {
                     if (playTimer) { clearInterval(playTimer); const speed = parseInt(speedSel.value) || 500; playTimer = setInterval(() => { currentIdx = (currentIdx + 1) % canvases.length; updatePreview(); }, speed); }
                 });
