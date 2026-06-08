@@ -79,6 +79,10 @@ function initBlueprint() {
             { name: '减少杂色', key: 'denoise', type: 'checkbox', default: false },
             { name: '阈值', key: 'denoiseThreshold', type: 'range', default: 15, min: 1, max: 100 }
         ]},
+        'bg-remove': { category: '特效', name: 'AI 去背景', icon: 'fa-user-slash', color: '#8b5cf6', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
+            { name: '输出类型', key: 'outputType', type: 'select', default: 'foreground', options: ['foreground', 'mask', 'background'] },
+            { name: '背景填充', key: 'bgFill', type: 'select', default: 'none', options: ['none', 'white', 'black'] }
+        ]},
         'export': { category: '输出', name: '导出', icon: 'fa-download', color: '#f44336', inputs: [{ name: '图片', type: 'image' }], outputs: [], params: [
             { name: '格式', key: 'format', type: 'select', default: 'image/png', options: ['image/png', 'image/jpeg', 'image/webp'] },
             { name: '质量', key: 'quality', type: 'range', default: 92, min: 10, max: 100 }
@@ -840,6 +844,31 @@ function initBlueprint() {
             });
             return images.length === 1 ? images[0] : images;
         }
+        if (node.type === 'bg-remove') {
+            const inputVal = getInputValue(node.id, typeDef.inputs[0].name);
+            if (!inputVal) throw new Error('缺少输入图片');
+            const inputs = Array.isArray(inputVal) ? inputVal : [inputVal];
+            const lib = window.__bgRemovalLib;
+            if (!lib) throw new Error('AI 模型尚未加载，请先访问 AI 去背景工具页以激活模型');
+            const outputType = node.params.outputType || 'foreground';
+            const bgFill = node.params.bgFill || 'none';
+            const bgPath = new URL('./wwwroot/lib/bg-removal/dist/', location.href).href;
+            let processFn = lib.removeBackground;
+            if (outputType === 'mask') processFn = lib.segmentForeground || lib.alphamask;
+            if (outputType === 'background') processFn = lib.removeForeground;
+            const results = [];
+            for (const src of inputs) {
+                const blob = await canvasToBlob(src);
+                const resultBlob = await processFn(blob, { publicPath: bgPath, model: 'isnet_fp16', output: { format: 'image/png' } });
+                let resultCanvas = await blobToCanvas(resultBlob);
+                if (outputType === 'foreground' && bgFill !== 'none') {
+                    const bgColor = bgFill === 'white' ? '#FFFFFF' : '#000000';
+                    resultCanvas = await applyBackgroundFill(resultCanvas, bgColor);
+                }
+                results.push(resultCanvas);
+            }
+            return results.length === 1 ? results[0] : results;
+        }
         const inputVal = getInputValue(node.id, typeDef.inputs[0].name);
         if (!inputVal) throw new Error('缺少输入图片');
         const inputs = Array.isArray(inputVal) ? inputVal : [inputVal];
@@ -1318,5 +1347,30 @@ function initBlueprint() {
         requestAnimationFrame(connectionRenderLoop);
     }
     requestAnimationFrame(connectionRenderLoop);
+
+    function canvasToBlob(canvas) {
+        return new Promise(resolve => canvas.toBlob(blob => resolve(blob), 'image/png'));
+    }
+
+    async function blobToCanvas(blob) {
+        const img = await createImageBitmap(blob);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        return canvas;
+    }
+
+    async function applyBackgroundFill(canvas, bgColor) {
+        const oc = document.createElement('canvas');
+        oc.width = canvas.width;
+        oc.height = canvas.height;
+        const ctx = oc.getContext('2d');
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, oc.width, oc.height);
+        ctx.drawImage(canvas, 0, 0);
+        return oc;
+    }
+
     console.log('Blueprint tool initialized');
 }
