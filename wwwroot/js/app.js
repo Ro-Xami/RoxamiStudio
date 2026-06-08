@@ -201,6 +201,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initImageFlipper();
     initPerfectPixel();
     initBlueprint();
+    initBgRemover();
     initLanguageToggle();
 
     // Set initial active tool
