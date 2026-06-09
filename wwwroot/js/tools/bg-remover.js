@@ -170,6 +170,8 @@ function initBgRemover() {
                     const resultBlob = await processFn(imgData.file, {
                         publicPath: publicPath,
                         model: 'isnet_fp16',
+                        device: 'cpu',
+                        proxyToWorker: false,
                         output: {
                             format: 'image/png'
                         }

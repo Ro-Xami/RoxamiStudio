@@ -859,7 +859,7 @@ function initBlueprint() {
             const results = [];
             for (const src of inputs) {
                 const blob = await canvasToBlob(src);
-                const resultBlob = await processFn(blob, { publicPath: bgPath, model: 'isnet_fp16', output: { format: 'image/png' } });
+                const resultBlob = await processFn(blob, { publicPath: bgPath, model: 'isnet_fp16', device: 'cpu', proxyToWorker: false, output: { format: 'image/png' } });
                 let resultCanvas = await blobToCanvas(resultBlob);
                 if (outputType === 'foreground' && bgFill !== 'none') {
                     const bgColor = bgFill === 'white' ? '#FFFFFF' : '#000000';
