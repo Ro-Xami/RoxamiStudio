@@ -980,7 +980,10 @@ async function loadAsBlob(key, config) {
     }
     return blob;
   });
-  const allChunkData = await Promise.all(responses);
+  const allChunkData = [];
+  for (const res of responses) {
+    allChunkData.push(await res);
+  }
   const data = new Blob(allChunkData, { type: entry.mime });
   if (data.size !== entry.size) {
     throw new Error(
