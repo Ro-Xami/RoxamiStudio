@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="wwwroot/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" crossorigin="anonymous">
-    <link rel="icon" type="image/x-icon" href="wwwroot/images/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="wwwroot/images/roxami_icon.ico">
     <!-- ESM import map for background remover -->
     <script type="importmap">
     {
@@ -32,12 +32,15 @@
         <header class="app-header">
             <div class="header-left">
                 <div class="logo">
-                    <i class="fas fa-tools"></i>
+                    <img class="logo-icon" src="wwwroot/images/roxami_icon.ico" alt="Roxami">
                     <h1>Roxami Studio</h1>
                 </div>
-                <p class="tagline">实用的网页工具集合</p>
+
             </div>
             <div class="header-right">
+                <button class="restart-btn" id="restart-btn" title="重启应用" aria-label="重启应用">
+                    <i class="fas fa-redo-alt"></i>
+                </button>
                 <div class="theme-toggle">
                     <button id="theme-toggle-btn" aria-label="切换主题">
                         <i class="fas fa-moon"></i>

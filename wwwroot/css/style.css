@@ -116,6 +116,11 @@ body {
     gap: var(--spacing-md);
 }
 
+.logo-icon {
+    width: 56px;
+    height: 56px;
+}
+
 .logo i {
     font-size: 1.8rem;
     color: var(--color-accent-blue);
@@ -139,7 +144,7 @@ body {
     gap: var(--spacing-md);
 }
 
-.theme-toggle button, .language-toggle button, .user-btn {
+.theme-toggle button, .language-toggle button, .user-btn, .restart-btn {
     background: none;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
@@ -151,6 +156,10 @@ body {
     color: var(--color-text-secondary);
     transition: all var(--transition-fast);
     background-color: var(--color-bg-tertiary);
+}
+
+.restart-btn {
+    width: 40px;
 }
 
 .theme-toggle button {
@@ -166,7 +175,7 @@ body {
     width: 40px;
 }
 
-.theme-toggle button:hover, .language-toggle button:hover, .user-btn:hover {
+.theme-toggle button:hover, .language-toggle button:hover, .user-btn:hover, .restart-btn:hover {
     background-color: var(--color-hover);
     color: var(--color-text-primary);
     border-color: var(--color-active);

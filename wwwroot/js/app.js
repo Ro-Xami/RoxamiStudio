@@ -192,6 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize all modules
     initToolSwitcher();
     initThemeToggle();
+    initRestartButton();
     initSidebarToggle();
     initResponsiveBehavior();
     init3DConverter();
@@ -277,6 +278,46 @@ function updateCurrentToolName() {
     }
 }
 
+// Restart Button Module
+function initRestartButton() {
+    const restartBtn = document.getElementById('restart-btn');
+    if (!restartBtn) return;
+
+    restartBtn.addEventListener('click', function() {
+        restartBtn.disabled = true;
+        var icon = restartBtn.querySelector('i');
+        icon.classList.add('fa-spin');
+
+        fetch('/restart')
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                console.log('Restarting, new PID:', data.newPid);
+                // Poll until new server is ready
+                var attempts = 0;
+                var maxAttempts = 30;
+                var interval = setInterval(function() {
+                    attempts++;
+                    fetch('/health')
+                        .then(function() {
+                            location.reload();
+                            clearInterval(interval);
+                        })
+                        .catch(function() {
+                            if (attempts >= maxAttempts) {
+                                clearInterval(interval);
+                                restartBtn.disabled = false;
+                                icon.classList.remove('fa-spin');
+                            }
+                        });
+                }, 500);
+            })
+            .catch(function() {
+                restartBtn.disabled = false;
+                icon.classList.remove('fa-spin');
+            });
+    });
+}
+
 // Theme Toggle Module
 function initThemeToggle() {
     const themeToggleBtn = document.getElementById('theme-toggle-btn');
@@ -284,9 +325,9 @@ function initThemeToggle() {
 
     const themeIcon = themeToggleBtn.querySelector('i');
 
-    // Check for saved theme preference or default to dark
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    if (savedTheme === 'light') {
+    // Check for saved theme preference or default to light
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    if (savedTheme !== 'dark') {
         document.body.classList.add('light-theme');
         themeIcon.classList.remove('fa-moon');
         themeIcon.classList.add('fa-sun');

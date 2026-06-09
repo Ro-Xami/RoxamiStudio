@@ -23,15 +23,16 @@ Roxami Studio 是一个基于静态网站的网页工具集平台，提供 3D �
 - **侧边栏折叠**: 可折叠侧边栏以最大化工作区域
 - **响应式设计**: 自适应桌面和移动设备
 - **本地处理**: 所有文件处理在浏览器中完成，保障隐私安全
-- **一键启动**: 提供 Windows 可执行文件（exe）和批处理脚本（bat）
+- **一键启动**: 自包含的 Windows exe，无需额外依赖
+- **一键重启**: 点击重启按钮即可重新启动应用
 
 ## 快速开始
 
 ### Windows 一键启动（推荐）
 
-双击项目根目录下的 **`RoxamiStudio.exe`**，程序将自动启动本地 HTTP 服务器并在默认浏览器中打开。
+双击项目根目录下的 **`RoxamiStudio.exe`**，程序将自动启动内置 HTTP 服务器并在默认浏览器中打开。
 
-> 需要已安装 [Node.js](https://nodejs.org)（用于运行 http-server）。
+> 无需安装任何运行时依赖，exe 自包含 HTTP 服务器。
 
 ### 批处理启动
 
@@ -40,10 +41,8 @@ Roxami Studio 是一个基于静态网站的网页工具集平台，提供 3D �
 ### 手动启动
 
 ```bash
-# 使用 npx（需要 Node.js）
 npx http-server . -p 8080 -c-1
-
-# 或使用 Python
+# 或
 python -m http.server 8080
 ```
 
@@ -51,19 +50,19 @@ python -m http.server 8080
 
 ### 部署
 
-纯静态网站，无需构建过程，可将项目根目录部署到任何静态托管服务：
+纯静态网站，无需构建过程，可将以下文件部署到任何静态托管服务：
+`index.html`、`wwwroot/` 目录全部内容。
 
 - **GitHub Pages**: 推送到仓库并启用 Pages
 - **Netlify**: 拖放项目文件夹
 - **Vercel**: 导入 Git 仓库
-- **其他**: 任何支持静态文件的 Web 服务器
 
 ## 项目结构
 
 ```
 RoxamiStudio/
 ├── index.html                # 主页面
-├── RoxamiStudio.exe          # Windows 启动器（双击运行）
+├── RoxamiStudio.exe          # Windows 启动器（自包含 HTTP 服务器）
 ├── start.bat                 # 批处理启动脚本
 ├── Program.cs                # 启动器源代码（C#）
 ├── RoxamiStudio.csproj       # .NET 项目文件
@@ -88,9 +87,10 @@ RoxamiStudio/
 │   │       ├── perfect-pixel.js       # 完美像素
 │   │       └── bg-remover.js          # AI 去背景
 │   ├── images/
-│   │   └── favicon.ico       # 网站图标
+│   │   ├── favicon.ico              # 网站图标
+│   │   └── roxami_icon.ico          # 应用图标
 │   └── lib/
-│       └── bg-removal/       # AI 去背景模型文件
+│       └── bg-removal/              # AI 去背景模型文件
 └── CLAUDE.md                 # AI 助手配置
 ```
 
@@ -101,8 +101,7 @@ RoxamiStudio/
 - **AI 推理**: ONNX Runtime Web（背景移除）
 - **图标**: Font Awesome 6.4.0（CDN）
 - **字体**: Google Fonts（Inter）
-- **启动器**: .NET Framework（C#）
-- **本地服务**: http-server（Node.js）
+- **启动器**: .NET Framework 4.x（C#），内建 TcpListener HTTP 服务器
 
 ## 开发指南
 
@@ -129,12 +128,13 @@ RoxamiStudio/
 - 圆角：`--radius-sm` (4px) → `--radius-xl` (16px)
 - 过渡：`--transition-fast` (150ms) / `--transition-normal` (250ms) / `--transition-slow` (350ms)
 
-### 构建启动器
-
-如需重新编译 `RoxamiStudio.exe`：
+### 重新编译 exe
 
 ```powershell
-# 使用 .NET SDK
+# 使用 PowerShell 编译（无需 .NET SDK）
+# 参见 Program.cs 源码，通过 Add-Type 编译
+
+# 或使用 .NET SDK
 dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
 ```
 
