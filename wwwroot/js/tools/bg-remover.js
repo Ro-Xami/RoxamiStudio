@@ -23,6 +23,21 @@ function initBgRemover() {
     let uploadedImages = [];
     let processedImages = [];
 
+    function isLocalHost() {
+        const h = location.hostname;
+        return h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h.startsWith('192.168.') || h.startsWith('10.');
+    }
+
+    if (!isLocalHost()) {
+        removeBtn.disabled = true;
+        removeBtn.title = '此功能仅限本地使用';
+        const banner = document.createElement('div');
+        banner.style.cssText = 'color:var(--color-accent-red);font-weight:600;padding:8px 12px;background:rgba(239,68,68,0.1);border:1px solid var(--color-accent-red);border-radius:var(--radius-sm);margin-bottom:var(--spacing-md);text-align:center;';
+        banner.innerHTML = '<i class="fas fa-exclamation-triangle"></i> AI 去背景仅支持本地使用（localhost），请双击 start.bat 后在本地浏览器打开。';
+        const header = document.querySelector('#bg-remover .placeholder-header');
+        if (header) header.parentNode.insertBefore(banner, header.nextSibling);
+    }
+
     function getLibrary() {
         return window.__bgRemovalLib;
     }
@@ -170,8 +185,7 @@ function initBgRemover() {
                     const resultBlob = await processFn(imgData.file, {
                         publicPath: publicPath,
                         model: 'isnet_fp16',
-                        device: 'cpu',
-                        proxyToWorker: false,
+                        device: 'gpu',
                         output: {
                             format: 'image/png'
                         }

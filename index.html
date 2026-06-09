@@ -843,6 +843,10 @@
                                     <span class="bp-toggle-switch" id="bp-realtime-toggle"></span>
                                     <span>实时预览</span>
                                 </label>
+                                <div class="bp-progress-bar" id="bp-progress-bar" style="display:none;">
+                                    <div class="bp-progress-fill"><div class="bp-progress-fill-inner" id="bp-progress-fill"></div></div>
+                                    <span class="bp-progress-text" id="bp-progress-text">0%</span>
+                                </div>
                                 <span style="flex:1"></span>
                                 <p style="font-size:0.7rem;color:var(--color-text-tertiary);margin:0;">
                                     右键画布搜索 | 拖拽添加 | 端口拖线连接 | Delete删除
@@ -850,6 +854,14 @@
                             </div>
                         </div>
                         <div class="bp-preview-modal" id="bp-preview-modal"></div>
+                        <div class="bp-template-picker" id="bp-template-picker" style="display:none;">
+                            <div class="bp-template-picker-content">
+                                <h4>加载蓝图模板</h4>
+                                <div class="bp-template-list" id="bp-template-list"></div>
+                                <button class="bp-btn-small" id="bp-template-browse">浏览本地文件...</button>
+                                <button class="bp-btn-small" id="bp-template-close">关闭</button>
+                            </div>
+                        </div>
                         <div class="tool-info-box">
                             <h4><i class="fas fa-info-circle"></i> 关于蓝图节点</h4>
                             <p>蓝图节点是一个可视化编程工具，通过拖拽和连接节点来构建素材处理流水线。支持加载图片、调整大小、翻转旋转、裁剪、色彩调整、灰度化、阈值、混合和导出等操作。</p>
@@ -957,6 +969,7 @@
                                 <li>参考：<a href="https://github.com/bria-ai/RMBG-1.4" target="_blank">BriaRMBG-1.4</a> / <a href="https://github.com/PramaLLC/BEN2" target="_blank">BEN2</a> 等 ComfyUI-Easy-Use 中的去背景实现</li>
                             </ul>
                             <p><strong>注意：</strong>所有处理均在您的浏览器本地完成，图片数据不会发送到服务器。由于 WebAssembly 限制，须通过 HTTP 服务器打开（双击 start.bat）。建议使用支持 WebGPU 的现代浏览器以获得最佳性能。</p>
+                            <p style="color: var(--color-accent-red); font-weight: 600; margin-top: var(--spacing-sm);"><i class="fas fa-exclamation-triangle"></i> 此功能仅支持本地使用（localhost / 127.0.0.1），GitHub Pages 等在线托管平台因 HTTP/2 大文件传输限制无法运行。</p>
                         </div>
                     </div>
                 </div>

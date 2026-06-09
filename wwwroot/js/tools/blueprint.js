@@ -19,6 +19,9 @@ function initBlueprint() {
     const realtimeLabel = container.querySelector('#bp-realtime-label');
     const saveBtn = container.querySelector('#bp-save-btn');
     const loadBtn = container.querySelector('#bp-load-btn');
+    const progressBar = container.querySelector('#bp-progress-bar');
+    const progressFill = container.querySelector('#bp-progress-fill');
+    const progressText = container.querySelector('#bp-progress-text');
 
     let realtimeEnabled = false;
     let realtimeTimer = null;
@@ -84,8 +87,7 @@ function initBlueprint() {
             { name: '背景填充', key: 'bgFill', type: 'select', default: 'none', options: ['none', 'white', 'black'] }
         ]},
         'export': { category: '输出', name: '导出', icon: 'fa-download', color: '#f44336', inputs: [{ name: '图片', type: 'image' }], outputs: [], params: [
-            { name: '格式', key: 'format', type: 'select', default: 'image/png', options: ['image/png', 'image/jpeg', 'image/webp'] },
-            { name: '质量', key: 'quality', type: 'range', default: 92, min: 10, max: 100 }
+            { name: '格式', key: 'format', type: 'select', default: 'image/png', options: ['image/png', 'image/jpeg', 'image/webp'] }
         ]},
         'file-sort': { category: '输出', name: '排序/重命名', icon: 'fa-sort-alpha-down', color: '#607d8b', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
             { name: '前缀', key: 'prefix', type: 'text', default: 'output_' },
@@ -100,13 +102,22 @@ function initBlueprint() {
     let nextConnId = 1;
     let panX = 0, panY = 0, zoom = 1;
     let selectedNodeId = null;
+    let selectedNodeIds = new Set();
     let selectedConnId = null;
+    let ctrlKey = false;
 
     let dragInfo = null;
     let connectDrag = null;
     let isPanning = false;
     let panStart = null;
     let panOrigX = 0, panOrigY = 0;
+    let boxSelecting = false;
+    let boxStart = null;
+    let boxEnd = null;
+    const boxSelectEl = document.createElement('div');
+    boxSelectEl.className = 'bp-selection-box';
+    boxSelectEl.style.display = 'none';
+    canvas.appendChild(boxSelectEl);
 
     function genNodeId() { return 'n' + (nextNodeId++); }
     function genConnId() { return 'c' + (nextConnId++); }
@@ -142,7 +153,7 @@ function initBlueprint() {
     function createNodeElement(node) {
         const typeDef = NODE_TYPES[node.type];
         const el = document.createElement('div');
-        el.className = 'bp-node' + (node.id === selectedNodeId ? ' bp-node-selected' : '');
+        el.className = 'bp-node' + ((node.id === selectedNodeId || selectedNodeIds.has(node.id)) ? ' bp-node-selected' : '');
         el.dataset.nodeId = node.id;
         el.style.left = node.x + 'px';
         el.style.top = node.y + 'px';
@@ -151,6 +162,7 @@ function initBlueprint() {
         let html = `<div class="bp-node-header">
             <i class="fas ${typeDef.icon}"></i>
             <span>${typeDef.name}</span>
+            <button class="bp-node-toggle ${node.enabled !== false ? 'bp-node-toggle-on' : ''}" data-node-id="${node.id}" title="${node.enabled !== false ? '已启用' : '已禁用'}">${node.enabled !== false ? '●' : '○'}</button>
             <button class="bp-node-delete" title="删除节点">&times;</button>
         </div>
         <div class="bp-node-body">`;
@@ -201,6 +213,7 @@ function initBlueprint() {
         el.innerHTML = html;
 
         el.querySelector('.bp-node-delete').addEventListener('click', e => { e.stopPropagation(); removeNode(node.id); });
+        el.querySelector('.bp-node-toggle').addEventListener('click', e => { e.stopPropagation(); toggleNodeEnabled(node.id, el); });
         el.addEventListener('mousedown', e => onNodeMouseDown(e, node.id));
 
         const inputs = el.querySelectorAll('.bp-port-input');
@@ -277,6 +290,7 @@ function initBlueprint() {
             const el = createNodeElement(n);
             nodesLayer.appendChild(el);
             setupPortDragEvents(el);
+            if (selectedNodeId === n.id || selectedNodeIds.has(n.id)) el.classList.add('bp-node-selected');
         });
         renderAllConnections();
     }
@@ -285,7 +299,7 @@ function initBlueprint() {
         const typeDef = NODE_TYPES[type];
         const params = {};
         typeDef.params.forEach(p => { params[p.key] = p.default; });
-        const node = { id: genNodeId(), type, x: (x - panX) / zoom, y: (y - panY) / zoom, params };
+        const node = { id: genNodeId(), type, x: (x - panX) / zoom, y: (y - panY) / zoom, params, enabled: true };
         nodes.push(node);
         const el = createNodeElement(node);
         nodesLayer.appendChild(el);
@@ -298,6 +312,7 @@ function initBlueprint() {
         connections = connections.filter(c => c.fromNodeId !== nodeId && c.toNodeId !== nodeId);
         nodes = nodes.filter(n => n.id !== nodeId);
         if (selectedNodeId === nodeId) selectedNodeId = null;
+        selectedNodeIds.delete(nodeId);
         renderAll();
     }
 
@@ -321,18 +336,64 @@ function initBlueprint() {
         renderAllConnections();
     }
 
-    function selectNode(nodeId) {
-        selectedNodeId = nodeId;
+    function toggleNodeEnabled(nodeId, nodeEl) {
+        const node = findNodeById(nodeId);
+        if (!node) return;
+        node.enabled = !node.enabled;
+        const toggleEl = nodeEl.querySelector('.bp-node-toggle');
+        if (node.enabled) {
+            toggleEl.textContent = '●';
+            toggleEl.title = '已启用';
+            toggleEl.classList.add('bp-node-toggle-on');
+            nodeEl.classList.remove('bp-node-disabled');
+        } else {
+            toggleEl.textContent = '○';
+            toggleEl.title = '已禁用';
+            toggleEl.classList.remove('bp-node-toggle-on');
+            nodeEl.classList.add('bp-node-disabled');
+        }
+    }
+
+    function selectNode(nodeId, additive) {
+        if (!additive) {
+            selectedNodeIds.clear();
+            selectedNodeId = nodeId;
+        } else {
+            if (selectedNodeIds.has(nodeId)) {
+                selectedNodeIds.delete(nodeId);
+            } else {
+                selectedNodeIds.add(nodeId);
+            }
+            selectedNodeId = null;
+        }
         selectedConnId = null;
         nodesLayer.querySelectorAll('.bp-node-selected').forEach(el => el.classList.remove('bp-node-selected'));
-        const el = nodesLayer.querySelector(`[data-node-id="${nodeId}"]`);
-        if (el) el.classList.add('bp-node-selected');
+        if (nodeId && !additive) {
+            const el = nodesLayer.querySelector(`[data-node-id="${nodeId}"]`);
+            if (el) el.classList.add('bp-node-selected');
+        }
+        selectedNodeIds.forEach(id => {
+            const el = nodesLayer.querySelector(`[data-node-id="${id}"]`);
+            if (el) el.classList.add('bp-node-selected');
+        });
         renderAllConnections();
+    }
+
+    function clearNodeSelection() {
+        selectedNodeId = null;
+        selectedNodeIds.clear();
+        nodesLayer.querySelectorAll('.bp-node-selected').forEach(el => el.classList.remove('bp-node-selected'));
+    }
+
+    function getSelectedNodeIds() {
+        if (selectedNodeId) return [selectedNodeId];
+        return [...selectedNodeIds];
     }
 
     function selectConnection(connId) {
         selectedConnId = connId;
         selectedNodeId = null;
+        selectedNodeIds.clear();
         nodesLayer.querySelectorAll('.bp-node-selected').forEach(el => el.classList.remove('bp-node-selected'));
         renderAllConnections();
     }
@@ -341,16 +402,17 @@ function initBlueprint() {
         nodes = [];
         connections = [];
         selectedNodeId = null;
+        selectedNodeIds.clear();
         selectedConnId = null;
         renderAll();
     }
 
     function onNodeMouseDown(e, nodeId) {
         if (e.button !== 0) return;
-        if (e.target.closest('.bp-port') || e.target.closest('.bp-node-delete') || e.target.closest('.bp-param-input') || e.target.closest('.bp-param-range') || e.target.closest('.bp-param-select') || e.target.closest('input[type="checkbox"]')) return;
+        if (e.target.closest('.bp-port') || e.target.closest('.bp-node-delete') || e.target.closest('.bp-node-toggle') || e.target.closest('.bp-param-input') || e.target.closest('.bp-param-range') || e.target.closest('.bp-param-select') || e.target.closest('input[type="checkbox"]')) return;
         e.stopPropagation();
         e.preventDefault();
-        selectNode(nodeId);
+        selectNode(nodeId, ctrlKey);
         const node = findNodeById(nodeId);
         dragInfo = { nodeId, sx: e.clientX, sy: e.clientY, ox: node.x, oy: node.y };
     }
@@ -360,19 +422,72 @@ function initBlueprint() {
         if (e.target.closest('.bp-node')) return;
         if (e.target.closest('#bp-context-menu')) return;
         e.preventDefault();
-        selectedNodeId = null;
-        selectedConnId = null;
-        nodesLayer.querySelectorAll('.bp-node-selected').forEach(el => el.classList.remove('bp-node-selected'));
-        renderAllConnections();
-        isPanning = true;
-        panStart = { x: e.clientX, y: e.clientY };
-        panOrigX = panX;
-        panOrigY = panY;
-        canvas.style.cursor = 'grabbing';
+        if (ctrlKey) {
+            clearNodeSelection();
+            boxSelecting = true;
+            const cr = canvas.getBoundingClientRect();
+            boxStart = { x: e.clientX - cr.left, y: e.clientY - cr.top };
+            boxEnd = { x: boxStart.x, y: boxStart.y };
+            boxSelectEl.style.display = 'block';
+            updateBoxSelect();
+        } else {
+            clearNodeSelection();
+            selectedConnId = null;
+            renderAllConnections();
+            isPanning = true;
+            panStart = { x: e.clientX, y: e.clientY };
+            panOrigX = panX;
+            panOrigY = panY;
+            canvas.style.cursor = 'grabbing';
+        }
         hideContextMenu();
     });
 
+    function updateBoxSelect() {
+        if (!boxStart || !boxEnd) return;
+        const left = Math.min(boxStart.x, boxEnd.x);
+        const top = Math.min(boxStart.y, boxEnd.y);
+        const w = Math.abs(boxEnd.x - boxStart.x);
+        const h = Math.abs(boxEnd.y - boxStart.y);
+        boxSelectEl.style.left = left + 'px';
+        boxSelectEl.style.top = top + 'px';
+        boxSelectEl.style.width = w + 'px';
+        boxSelectEl.style.height = h + 'px';
+    }
+
+    function finishBoxSelect() {
+        if (!boxStart || !boxEnd || !boxSelecting) return;
+        const left = Math.min(boxStart.x, boxEnd.x);
+        const top = Math.min(boxStart.y, boxEnd.y);
+        const right = Math.max(boxStart.x, boxEnd.x);
+        const bottom = Math.max(boxStart.y, boxEnd.y);
+        const cr = canvas.getBoundingClientRect();
+        nodes.forEach(n => {
+            const el = nodesLayer.querySelector(`[data-node-id="${n.id}"]`);
+            if (!el) return;
+            const nr = el.getBoundingClientRect();
+            const nx = nr.left - cr.left, ny = nr.top - cr.top;
+            const nw = nr.width, nh = nr.height;
+            if (nx < right && nx + nw > left && ny < bottom && ny + nh > top) {
+                selectedNodeIds.add(n.id);
+                el.classList.add('bp-node-selected');
+            }
+        });
+        selectedNodeId = null;
+        boxSelecting = false;
+        boxStart = null;
+        boxEnd = null;
+        boxSelectEl.style.display = 'none';
+        renderAllConnections();
+    }
+
     window.addEventListener('mousemove', function(e) {
+        if (boxSelecting && boxStart) {
+            const cr = canvas.getBoundingClientRect();
+            boxEnd = { x: e.clientX - cr.left, y: e.clientY - cr.top };
+            updateBoxSelect();
+            return;
+        }
         if (dragInfo) {
             const dx = (e.clientX - dragInfo.sx) / zoom;
             const dy = (e.clientY - dragInfo.sy) / zoom;
@@ -400,6 +515,7 @@ function initBlueprint() {
     });
 
     window.addEventListener('mouseup', function(e) {
+        if (boxSelecting) { finishBoxSelect(); return; }
         if (dragInfo) { dragInfo = null; }
         if (connectDrag) {
             const tempPath = svgLayer.querySelector('.bp-conn-temp');
@@ -446,12 +562,21 @@ function initBlueprint() {
     });
 
     document.addEventListener('keydown', function(e) {
+        if (e.key === 'Control') { ctrlKey = true; canvas.classList.add('bp-ctrl-active'); return; }
         if (e.key === 'Delete' || e.key === 'Backspace') {
             if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'SELECT')) return;
             if (!container.classList.contains('active')) return;
-            if (selectedNodeId) { removeNode(selectedNodeId); }
-            else if (selectedConnId) { removeConnection(selectedConnId); }
+            const toRemove = getSelectedNodeIds();
+            if (toRemove.length > 0) {
+                toRemove.forEach(id => removeNode(id));
+                return;
+            }
+            if (selectedConnId) { removeConnection(selectedConnId); }
         }
+    });
+
+    document.addEventListener('keyup', function(e) {
+        if (e.key === 'Control') { ctrlKey = false; canvas.classList.remove('bp-ctrl-active'); }
     });
 
     function showContextMenu(x, y) {
@@ -708,11 +833,20 @@ function initBlueprint() {
         return from.outputValue;
     }
 
+    function setProgress(pct) {
+        if (!progressBar || !progressFill || !progressText) return;
+        progressBar.style.display = pct > 0 ? 'flex' : 'none';
+        progressFill.style.width = pct + '%';
+        progressText.textContent = Math.round(pct) + '%';
+    }
+
     async function executeGraph() {
         const sorted = topologicalSort();
         if (!sorted) return;
         let hasError = false;
-        for (const nodeId of sorted) {
+        setProgress(0);
+        for (let i = 0; i < sorted.length; i++) {
+            const nodeId = sorted[i];
             const node = findNodeById(nodeId);
             if (!node) continue;
             const typeDef = NODE_TYPES[node.type];
@@ -724,7 +858,9 @@ function initBlueprint() {
                 hasError = true;
                 node.outputValue = null;
             }
+            setProgress(((i + 1) / sorted.length) * 100);
         }
+        setTimeout(() => setProgress(0), 1000);
         if (!hasError) { showNotification('蓝图执行完成', 'success'); }
         updateNodePreviews();
         const exportNodes = nodes.filter(n => n.type === 'export' && n.outputValue);
@@ -772,13 +908,17 @@ function initBlueprint() {
         const sorted = topologicalSort();
         if (!sorted) return;
         let hasError = false;
-        for (const nodeId of sorted) {
+        setProgress(0);
+        for (let i = 0; i < sorted.length; i++) {
+            const nodeId = sorted[i];
             const node = findNodeById(nodeId);
             if (!node) continue;
             const typeDef = NODE_TYPES[node.type];
             try { node.outputValue = await processNode(node, typeDef); }
             catch (err) { hasError = true; node.outputValue = null; }
+            setProgress(((i + 1) / sorted.length) * 100);
         }
+        setTimeout(() => setProgress(0), 1000);
         if (!hasError) { showNotification('预览已刷新', 'success'); }
         updateNodePreviews();
     }
@@ -790,6 +930,12 @@ function initBlueprint() {
     }
 
     async function processNode(node, typeDef) {
+        // Disabled nodes: pass through first input
+        if (node.enabled === false) {
+            if (typeDef.inputs.length === 0) return null;
+            if (typeDef.inputs.length === 2 && node.type === 'blend') return getInputValue(node.id, typeDef.inputs[0].name);
+            return getInputValue(node.id, typeDef.inputs[0].name);
+        }
         if (node.type === 'load-image') {
             if (node.cachedCanvases && node.cachedCanvases.length > 0) {
                 return node.cachedCanvases.length === 1 ? node.cachedCanvases[0] : node.cachedCanvases;
@@ -845,6 +991,10 @@ function initBlueprint() {
             return images.length === 1 ? images[0] : images;
         }
         if (node.type === 'bg-remove') {
+            const h = location.hostname;
+            if (h !== 'localhost' && h !== '127.0.0.1' && h !== '[::1]' && !h.startsWith('192.168.') && !h.startsWith('10.')) {
+                throw new Error('AI 去背景节点仅支持本地使用，请通过 start.bat 在本地浏览器打开');
+            }
             const inputVal = getInputValue(node.id, typeDef.inputs[0].name);
             if (!inputVal) throw new Error('缺少输入图片');
             const inputs = Array.isArray(inputVal) ? inputVal : [inputVal];
@@ -859,7 +1009,7 @@ function initBlueprint() {
             const results = [];
             for (const src of inputs) {
                 const blob = await canvasToBlob(src);
-                const resultBlob = await processFn(blob, { publicPath: bgPath, model: 'isnet_fp16', device: 'cpu', proxyToWorker: false, output: { format: 'image/png' } });
+                const resultBlob = await processFn(blob, { publicPath: bgPath, model: 'isnet_fp16', device: 'gpu', output: { format: 'image/png' } });
                 let resultCanvas = await blobToCanvas(resultBlob);
                 if (outputType === 'foreground' && bgFill !== 'none') {
                     const bgColor = bgFill === 'white' ? '#FFFFFF' : '#000000';
@@ -1137,21 +1287,84 @@ function initBlueprint() {
             counter.style.cssText = 'font-size:0.75rem;color:var(--color-text-tertiary);margin-left:8px;';
             counter.textContent = canvases.length > 1 ? `[1 / ${canvases.length}]` : '';
             hdr.appendChild(counter);
+            const zoomContainer = document.createElement('div');
+            zoomContainer.style.cssText = 'position:relative;overflow:hidden;cursor:grab;max-height:70vh;display:flex;align-items:center;justify-content:center;border-radius:4px;';
             const img = document.createElement('img');
             img.src = canvases[0].toDataURL();
-            img.style.cssText = 'max-width:100%;max-height:400px;display:block;border-radius:4px;margin:0 auto;';
-            wrapper.appendChild(img);
+            img.style.cssText = 'display:block;max-width:100%;max-height:70vh;border-radius:4px;transform-origin:0 0;image-rendering:auto;';
+            zoomContainer.appendChild(img);
+
+            let imgScale = 1, imgTx = 0, imgTy = 0;
+            let imgDragging = false, imgDragX = 0, imgDragY = 0;
+
+            function applyImgTransform() {
+                img.style.transform = `translate(${imgTx}px, ${imgTy}px) scale(${imgScale})`;
+            }
+
+            function imgFit() {
+                const cw = zoomContainer.clientWidth;
+                const ch = zoomContainer.clientHeight;
+                const iw = (canvases[currentIdx].width) || img.naturalWidth || 1;
+                const ih = (canvases[currentIdx].height) || img.naturalHeight || 1;
+                if (iw && ih) {
+                    imgScale = Math.min(cw / iw, ch / ih, 1);
+                    imgTx = (cw - iw * imgScale) / 2;
+                    imgTy = (ch - ih * imgScale) / 2;
+                } else { imgScale = 1; imgTx = 0; imgTy = 0; }
+                applyImgTransform();
+            }
+
+            zoomContainer.addEventListener('wheel', e => {
+                e.preventDefault();
+                const r = zoomContainer.getBoundingClientRect();
+                const cx = e.clientX - r.left, cy = e.clientY - r.top;
+                const prev = imgScale;
+                imgScale = Math.max(0.1, Math.min(10, imgScale * (e.deltaY < 0 ? 1.1 : 0.9)));
+                imgTx = cx - (cx - imgTx) * (imgScale / prev);
+                imgTy = cy - (cy - imgTy) * (imgScale / prev);
+                applyImgTransform();
+            }, { passive: false });
+
+            zoomContainer.addEventListener('mousedown', e => {
+                if (e.button !== 0) return;
+                imgDragging = true; imgDragX = e.clientX - imgTx; imgDragY = e.clientY - imgTy;
+                zoomContainer.style.cursor = 'grabbing';
+                e.preventDefault();
+            });
+            window.addEventListener('mousemove', function imgMove(e) {
+                if (!imgDragging) return;
+                imgTx = e.clientX - imgDragX; imgTy = e.clientY - imgDragY;
+                applyImgTransform();
+            });
+            window.addEventListener('mouseup', function imgUp() {
+                if (imgDragging) { imgDragging = false; zoomContainer.style.cursor = 'grab'; }
+            });
+            zoomContainer.addEventListener('dblclick', e => { e.preventDefault(); imgFit(); });
+
+            const zoomCtrls = document.createElement('div');
+            zoomCtrls.className = 'preview-zoom-controls';
+            zoomCtrls.style.cssText = 'opacity:0.6;';
+            zoomCtrls.innerHTML = `<button class="preview-zoom-btn">+</button><button class="preview-zoom-btn">−</button><button class="preview-zoom-btn">⊡</button>`;
+            zoomCtrls.children[0].addEventListener('click', e => { e.stopPropagation(); const r = zoomContainer.getBoundingClientRect(); const cx = r.width/2, cy = r.height/2; const prev = imgScale; imgScale = Math.min(10, imgScale*1.25); imgTx = cx-(cx-imgTx)*(imgScale/prev); imgTy = cy-(cy-imgTy)*(imgScale/prev); applyImgTransform(); });
+            zoomCtrls.children[1].addEventListener('click', e => { e.stopPropagation(); const r = zoomContainer.getBoundingClientRect(); const cx = r.width/2, cy = r.height/2; const prev = imgScale; imgScale = Math.max(0.1, imgScale*0.8); imgTx = cx-(cx-imgTx)*(imgScale/prev); imgTy = cy-(cy-imgTy)*(imgScale/prev); applyImgTransform(); });
+            zoomCtrls.children[2].addEventListener('click', e => { e.stopPropagation(); imgFit(); });
+            zoomContainer.appendChild(zoomCtrls);
+            wrapper.appendChild(zoomContainer);
+
             const info = document.createElement('p');
             info.textContent = '尺寸: ' + canvases[0].width + 'x' + canvases[0].height;
             wrapper.appendChild(info);
 
-            function updatePreview() {
+            function updatePreview(skipFit) {
                 img.src = canvases[currentIdx].toDataURL();
                 info.textContent = '尺寸: ' + canvases[currentIdx].width + 'x' + canvases[currentIdx].height;
                 counter.textContent = canvases.length > 1 ? `[${currentIdx + 1} / ${canvases.length}]` : '';
                 const nc = navRow.querySelector('.bp-nav-counter');
                 if (nc) nc.textContent = `${currentIdx + 1} / ${canvases.length}`;
+                if (!skipFit) setTimeout(() => imgFit(), 50);
             }
+
+            setTimeout(() => imgFit(), 100);
 
             const navRow = document.createElement('div');
             navRow.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;';
@@ -1185,7 +1398,7 @@ function initBlueprint() {
                     if (playTimer) { clearInterval(playTimer); playTimer = null; playBtn.innerHTML = '<i class="fas fa-play"></i> 播放'; return; }
                     const speed = parseInt(playBar.querySelector('select').value) || 500;
                     playBtn.innerHTML = '<i class="fas fa-pause"></i> 暂停';
-                    playTimer = setInterval(() => { currentIdx = (currentIdx + 1) % canvases.length; updatePreview(); }, speed);
+                    playTimer = setInterval(() => { currentIdx = (currentIdx + 1) % canvases.length; updatePreview(true); }, speed);
                 });
                 playBar.appendChild(playBtn);
                 const speedLabel = document.createElement('span');
@@ -1195,7 +1408,7 @@ function initBlueprint() {
                 const speedSel = document.createElement('select');
                 speedSel.innerHTML = '<option value="100" selected>100ms</option><option value="250">250ms</option><option value="500">500ms</option><option value="1000">1000ms</option>';
                 speedSel.addEventListener('change', () => {
-                    if (playTimer) { clearInterval(playTimer); const speed = parseInt(speedSel.value) || 500; playTimer = setInterval(() => { currentIdx = (currentIdx + 1) % canvases.length; updatePreview(); }, speed); }
+                    if (playTimer) { clearInterval(playTimer); const speed = parseInt(speedSel.value) || 500; playTimer = setInterval(() => { currentIdx = (currentIdx + 1) % canvases.length; updatePreview(true); }, speed); }
                 });
                 playBar.appendChild(speedSel);
                 wrapper.appendChild(playBar);
@@ -1240,7 +1453,7 @@ function initBlueprint() {
 
     function downloadCanvas(canvas, params, nodeIdx, imgIdx) {
         const format = params.format || 'image/png';
-        const quality = (params.quality || 92) / 100;
+        const quality = (params.quality || 100) / 100;
         const ext = format.split('/')[1];
         const bpName = canvas._blueprintName;
         const filename = bpName ? `${bpName}.${ext}` : `output_${nodeIdx + 1}_${imgIdx + 1}.${ext}`;
@@ -1258,7 +1471,7 @@ function initBlueprint() {
         const data = {
             version: 1,
             timestamp: new Date().toISOString(),
-            nodes: nodes.map(n => ({ id: n.id, type: n.type, x: Math.round(n.x), y: Math.round(n.y), params: n.params })),
+            nodes: nodes.map(n => ({ id: n.id, type: n.type, x: Math.round(n.x), y: Math.round(n.y), params: n.params, enabled: n.enabled })),
             connections: connections.map(c => ({ fromNodeId: c.fromNodeId, fromPort: c.fromPort, toNodeId: c.toNodeId, toPort: c.toPort })),
             nextNodeId: nextNodeId,
             nextConnId: nextConnId
@@ -1286,7 +1499,7 @@ function initBlueprint() {
                     const data = JSON.parse(ev.target.result);
                     if (!data.nodes || !data.connections) throw new Error('无效的蓝图文件');
                     clearGraph();
-                    nodes = data.nodes.map(n => ({ id: n.id, type: n.type, x: n.x, y: n.y, params: n.params || {} }));
+                    nodes = data.nodes.map(n => ({ id: n.id, type: n.type, x: n.x, y: n.y, params: n.params || {}, enabled: n.enabled !== false }));
                     connections = data.connections.map(c => ({ id: c.id || genConnId(), fromNodeId: c.fromNodeId, fromPort: c.fromPort, toNodeId: c.toNodeId, toPort: c.toPort }));
                     nextNodeId = data.nextNodeId || Math.max(0, ...nodes.map(n => parseInt(n.id.slice(1)))) + 1;
                     nextConnId = data.nextConnId || 1;
@@ -1333,7 +1546,56 @@ function initBlueprint() {
         saveBlueprint();
     });
 
-    loadBtn.addEventListener('click', () => loadBlueprint());
+    loadBtn.addEventListener('click', () => showTemplatePicker());
+
+    const templatePicker = container.querySelector('#bp-template-picker');
+    const templateList = container.querySelector('#bp-template-list');
+    const templateBrowse = container.querySelector('#bp-template-browse');
+    const templateClose = container.querySelector('#bp-template-close');
+
+    templateClose.addEventListener('click', () => { templatePicker.style.display = 'none'; });
+    templatePicker.addEventListener('mousedown', e => { if (e.target === templatePicker) templatePicker.style.display = 'none'; });
+    templateBrowse.addEventListener('click', () => {
+        templatePicker.style.display = 'none';
+        loadBlueprint();
+    });
+
+    async function showTemplatePicker() {
+        templatePicker.style.display = 'flex';
+        templateList.innerHTML = '<p style="font-size:0.75rem;color:var(--color-text-tertiary);">加载中...</p>';
+        let templates = [];
+        try {
+            const resp = await fetch('BlueprintTemplate/manifest.json');
+            if (resp.ok) { const data = await resp.json(); templates = data.templates || []; }
+        } catch (e) {}
+        if (templates.length === 0) {
+            templates = [{ name: 'AI视频转完美像素动画', file: 'AI视频转完美像素动画.json' }];
+        }
+        templateList.innerHTML = '';
+        templates.forEach(tmpl => {
+            const row = document.createElement('div');
+            row.className = 'bp-template-row';
+            row.innerHTML = '<i class="fas fa-file-code"></i><span>' + tmpl.name + '</span>';
+            row.addEventListener('click', () => {
+                templatePicker.style.display = 'none';
+                fetch('BlueprintTemplate/' + tmpl.file)
+                    .then(r => { if (!r.ok) throw new Error('加载失败'); return r.json(); })
+                    .then(data => {
+                        if (!data.nodes || !data.connections) throw new Error('无效模板');
+                        clearGraph();
+                        nodes = data.nodes.map(n => ({ id: n.id, type: n.type, x: n.x, y: n.y, params: n.params || {}, enabled: n.enabled !== false }));
+                        connections = data.connections.map(c => ({ id: c.id || genConnId(), fromNodeId: c.fromNodeId, fromPort: c.fromPort, toNodeId: c.toNodeId, toPort: c.toPort }));
+                        nextNodeId = data.nextNodeId || Math.max(0, ...nodes.map(n => parseInt(n.id.slice(1)))) + 1;
+                        nextConnId = data.nextConnId || 1;
+                        renderAll();
+                        updateViewport();
+                        showNotification('已加载模板: ' + tmpl.name, 'success');
+                    })
+                    .catch(err => showNotification('模板加载失败: ' + err.message, 'error'));
+            });
+            templateList.appendChild(row);
+        });
+    }
 
     populatePalette();
     updateViewport();

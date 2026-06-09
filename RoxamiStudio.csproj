@@ -2,16 +2,16 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <OutputType>Library</OutputType>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <OutputType>Exe</OutputType>
+    <ApplicationIcon>ico\roxami_icon.ico</ApplicationIcon>
     <Nullable>enable</Nullable>
     <IsWebProject>false</IsWebProject>
+    <ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="CLAUDE.md" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="index.html" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
