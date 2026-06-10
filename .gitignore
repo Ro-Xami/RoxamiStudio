@@ -39,3 +39,4 @@ node_modules/
 
 # Local development overrides
 *.local.*
+settings.json

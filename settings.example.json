@@ -1,0 +1,17 @@
+{
+    "theme": "light",
+    "providers": [
+        {
+            "name": "OpenRouter",
+            "baseUrl": "https://openrouter.ai/api/v1",
+            "apiKey": "sk-or-v1-your-key-here",
+            "models": [
+                { "id": "openai/gpt-4o", "name": "GPT-4o" },
+                { "id": "openai/gpt-4o-mini", "name": "GPT-4o Mini" },
+                { "id": "anthropic/claude-3.5-sonnet", "name": "Claude 3.5 Sonnet" },
+                { "id": "google/gemini-2.0-flash", "name": "Gemini 2.0 Flash" },
+                { "id": "deepseek/deepseek-chat", "name": "DeepSeek V3" }
+            ]
+        }
+    ]
+}

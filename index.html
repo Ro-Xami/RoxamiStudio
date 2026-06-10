@@ -25,8 +25,10 @@
     <!-- Three.js for 3D preview -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.min.js" crossorigin="anonymous"></script>
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
-<body>
+<body class="light-theme">
     <div class="app-container">
         <!-- Header -->
         <header class="app-header">
@@ -41,11 +43,9 @@
                 <button class="restart-btn" id="restart-btn" title="重启应用" aria-label="重启应用">
                     <i class="fas fa-redo-alt"></i>
                 </button>
-                <div class="theme-toggle">
-                    <button id="theme-toggle-btn" aria-label="切换主题">
-                        <i class="fas fa-moon"></i>
-                    </button>
-                </div>
+                <button class="settings-btn" id="settings-btn" title="设置">
+                    <i class="fas fa-cog"></i>
+                </button>
             </div>
         </header>
 
@@ -131,6 +131,15 @@
                         <div class="tool-info">
                             <h3>AI 去背景</h3>
                             <p>智能移除图片背景</p>
+                        </div>
+                    </div>
+                    <div class="tool-item" data-tool="ai-chat">
+                        <div class="tool-icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="tool-info">
+                            <h3>AI 对话</h3>
+                            <p>多模型 AI 聊天助手</p>
                         </div>
                     </div>
                 </div>
@@ -975,6 +984,47 @@
                             <p style="color: var(--color-accent-red); font-weight: 600; margin-top: var(--spacing-sm);"><i class="fas fa-exclamation-triangle"></i> 此功能仅支持本地使用（localhost / 127.0.0.1），GitHub Pages 等在线托管平台因 HTTP/2 大文件传输限制无法运行。</p>
                         </div>
                     </div>
+                    <!-- AI Chat Tool -->
+                    <div class="tool-placeholder" id="ai-chat">
+                        <div class="placeholder-header">
+                            <h2><i class="fas fa-robot"></i> AI 对话</h2>
+                            <p>通过 OpenRouter 等 API 与 AI 进行多轮对话，支持流式输出和 Markdown 渲染。</p>
+                        </div>
+                        <div class="chat-tool-ui">
+                            <div class="chat-layout" id="ai-chat-layout">
+                                <div class="chat-sidebar">
+                                    <div class="chat-sidebar-header">
+                                        <button class="small-btn" id="ai-chat-new-btn">
+                                            <i class="fas fa-plus"></i> 新对话
+                                        </button>
+                                    </div>
+                                    <div class="chat-history-list" id="ai-chat-history-list"></div>
+                                </div>
+                                <div class="chat-main">
+                                    <div class="chat-messages" id="ai-chat-messages"></div>
+                                    <div class="chat-input-area">
+                                        <textarea id="ai-chat-input" placeholder="输入消息，Enter 发送，Shift+Enter 换行" rows="2"></textarea>
+                                        <button class="small-btn" id="ai-chat-send-btn">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </button>
+                                    </div>
+                                    <div class="chat-model-bar" id="ai-chat-model-bar">
+                                        <span class="chat-model-label" id="ai-chat-model-label"></span>
+                                        <div class="chat-model-selectors">
+                                            <select id="ai-chat-provider-select" title="供应商"></select>
+                                            <select id="ai-chat-model-select" title="模型"></select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chat-setup-prompt" id="ai-chat-setup" style="display:none;">
+                                <div class="chat-setup-icon"><i class="fas fa-cog"></i></div>
+                                <h3>AI 对话未配置</h3>
+                                <p>请在设置面板中配置供应商和 API Key。</p>
+                                <p>点击右上角齿轮图标 <i class="fas fa-cog"></i> 打开设置，在 AI 对话栏中添加供应商和模型后保存即可。</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="content-footer">
@@ -998,6 +1048,269 @@
         </footer>
     </div>
 
+    <!-- Settings Overlay Styles (inline to bypass cache) -->
+    <style>
+        .settings-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 300;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 250ms ease, visibility 250ms ease;
+        }
+        .settings-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        .settings-panel {
+            background: var(--color-bg-card, #1e293b);
+            border-radius: 12px;
+            max-width: 420px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+            transform: translateY(20px);
+            transition: transform 250ms ease;
+            border: 1px solid var(--color-border, #475569);
+        }
+        .settings-overlay.visible .settings-panel {
+            transform: translateY(0);
+        }
+        .settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--color-border, #475569);
+        }
+        .settings-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-text-primary, #f1f5f9);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .settings-header h3 i { color: var(--color-accent-blue, #3b82f6); }
+        .settings-close-btn {
+            background: none;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--color-text-tertiary, #94a3b8);
+            font-size: 1rem;
+            transition: all 150ms ease;
+        }
+        .settings-close-btn:hover {
+            background: var(--color-hover, #334155);
+            color: var(--color-text-primary, #f1f5f9);
+        }
+        .settings-body {
+            padding: 1rem 1.5rem;
+        }
+        .settings-group {
+            margin-bottom: 1.5rem;
+        }
+        .settings-group:last-child { margin-bottom: 0; }
+        .settings-group h4 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--color-text-tertiary, #94a3b8);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--color-border, #475569);
+        }
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+        }
+        .settings-row > span {
+            font-size: 0.9rem;
+            color: var(--color-text-primary, #f1f5f9);
+        }
+        .settings-row select {
+            background: var(--color-bg-tertiary, #334155);
+            color: var(--color-text-primary, #f1f5f9);
+            border: 1px solid var(--color-border, #475569);
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            cursor: pointer;
+            outline: none;
+        }
+        .settings-row select:focus { border-color: var(--color-accent-blue, #3b82f6); }
+        .settings-range-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .settings-row input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 120px;
+            height: 4px;
+            background: var(--color-bg-tertiary, #334155);
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+        }
+        .settings-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--color-accent-blue, #3b82f6);
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #1e293b;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }
+        .settings-val {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary, #cbd5e1);
+            min-width: 38px;
+            text-align: right;
+        }
+        .settings-toggle {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+        .settings-toggle input { opacity: 0; width: 0; height: 0; }
+        .settings-slider {
+            position: absolute;
+            inset: 0;
+            background: var(--color-bg-tertiary, #334155);
+            border-radius: 24px;
+            cursor: pointer;
+            transition: background 150ms ease;
+            border: 1px solid var(--color-border, #475569);
+        }
+        .settings-slider::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 150ms ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .settings-toggle input:checked + .settings-slider {
+            background: var(--color-accent-blue, #3b82f6);
+            border-color: var(--color-accent-blue, #3b82f6);
+        }
+        .settings-toggle input:checked + .settings-slider::after {
+            transform: translateX(20px);
+        }
+        .settings-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--color-border, #475569);
+            display: flex;
+            justify-content: flex-end;
+        }
+        .settings-save-btn {
+            background: var(--color-accent-blue, #3b82f6);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 24px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 150ms ease, transform 150ms ease;
+            font-family: inherit;
+        }
+        .settings-save-btn:hover { background: #2563eb; }
+        .settings-save-btn:active { transform: scale(0.97); }
+    </style>
+
+    <!-- Settings Overlay -->
+    <div class="settings-overlay" id="settings-overlay">
+        <div class="settings-panel">
+            <div class="settings-header">
+                <h3><i class="fas fa-cog"></i> 设置</h3>
+                <button class="settings-close-btn" id="settings-close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="settings-body">
+                <div class="settings-group">
+                    <h4>外观</h4>
+                    <div class="settings-row">
+                        <span>主题模式</span>
+                        <select id="settings-theme">
+                            <option value="dark">暗色</option>
+                            <option value="light">亮色</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <h4>AI 对话</h4>
+                    <div class="settings-row">
+                        <span>供应商</span>
+                        <select id="settings-ai-provider"></select>
+                    </div>
+                    <div class="settings-row">
+                        <span></span>
+                        <button class="small-btn" id="settings-ai-new-btn" style="font-size:0.75rem;">
+                            <i class="fas fa-plus"></i> 新供应商
+                        </button>
+                    </div>
+                    <div class="settings-ai-detail" id="settings-ai-detail-block" style="display:none;">
+                        <div class="settings-row">
+                            <span>名称</span>
+                            <input type="text" id="settings-ai-name" class="settings-text-input">
+                        </div>
+                        <div class="settings-row">
+                            <span>Base URL</span>
+                            <input type="text" id="settings-ai-baseurl" class="settings-text-input">
+                        </div>
+                        <div class="settings-row">
+                            <span>API Key</span>
+                            <input type="password" id="settings-ai-apikey" class="settings-text-input">
+                        </div>
+                        <div class="settings-row" style="align-items:flex-start;">
+                            <span>模型<span style="color:var(--color-text-tertiary);font-size:0.7rem;"><br>(ID / 名称)</span></span>
+                            <div class="settings-ai-models-wrap">
+                                <div id="settings-ai-models-list"></div>
+                                <div class="settings-ai-add-model">
+                                    <input type="text" id="settings-ai-new-model-id" class="settings-text-input" placeholder="模型 ID" style="flex:1;min-width:0;">
+                                    <input type="text" id="settings-ai-new-model-name" class="settings-text-input" placeholder="显示名称" style="flex:1;min-width:0;">
+                                    <button class="small-btn" id="settings-ai-add-model-btn" style="flex-shrink:0;">+</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="settings-ai-actions">
+                            <button class="settings-save-btn" id="settings-ai-save-btn" style="margin-right:var(--spacing-sm);">保存</button>
+                            <button class="small-btn" id="settings-ai-del-btn" style="color:var(--color-accent-red);"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript -->
     <script src="wwwroot/js/tools/3d-converter.js"></script>
     <script src="wwwroot/js/tools/video-frame-extractor.js"></script>
@@ -1007,6 +1320,7 @@
     <script src="wwwroot/js/tools/perfect-pixel.js"></script>
     <script src="wwwroot/js/tools/bg-remover.js"></script>
     <script src="wwwroot/js/tools/blueprint.js"></script>
+    <script src="wwwroot/js/tools/ai-chat.js"></script>
     <script src="wwwroot/js/app.js"></script>
 </body>
 </html>

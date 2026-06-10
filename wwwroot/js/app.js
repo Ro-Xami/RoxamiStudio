@@ -153,6 +153,10 @@ const translations = {
         'blueprintTitle': '蓝图节点',
         'blueprintSubtitle': '可视化节点编辑器，通过连接节点来构建素材处理流水线。',
 
+        // AI Chat tool
+        'aiChat': 'AI 对话',
+        'aiChatDesc': '多模型 AI 聊天助手',
+
         // Footer
         'footerText': '所有处理均在您的浏览器中进行。数据不会发送到服务器。',
         'copyright': '© 2026 Roxami Studio',
@@ -190,8 +194,8 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Roxami Web Tools loaded');
 
     // Initialize all modules
+    initSettingsPanel();
     initToolSwitcher();
-    initThemeToggle();
     initRestartButton();
     initSidebarToggle();
     initResponsiveBehavior();
@@ -203,6 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initPerfectPixel();
     initBlueprint();
     initBgRemover();
+    initAiChat();
     initLanguageToggle();
 
     // Set initial active tool
@@ -287,34 +292,9 @@ function initRestartButton() {
         restartBtn.disabled = true;
         var icon = restartBtn.querySelector('i');
         icon.classList.add('fa-spin');
-
-        fetch('/restart')
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                console.log('Restarting, new PID:', data.newPid);
-                // Poll until new server is ready
-                var attempts = 0;
-                var maxAttempts = 30;
-                var interval = setInterval(function() {
-                    attempts++;
-                    fetch('/health')
-                        .then(function() {
-                            location.reload();
-                            clearInterval(interval);
-                        })
-                        .catch(function() {
-                            if (attempts >= maxAttempts) {
-                                clearInterval(interval);
-                                restartBtn.disabled = false;
-                                icon.classList.remove('fa-spin');
-                            }
-                        });
-                }, 500);
-            })
-            .catch(function() {
-                restartBtn.disabled = false;
-                icon.classList.remove('fa-spin');
-            });
+        setTimeout(function () {
+            location.reload(true);
+        }, 200);
     });
 }
 
@@ -608,6 +588,9 @@ function applyTranslations(language) {
         } else if (toolId === 'blueprint' && titleElement && descElement) {
             titleElement.textContent = preserveProperNouns(langData.blueprint);
             descElement.textContent = preserveProperNouns(langData.blueprintDesc);
+        } else if (toolId === 'ai-chat' && titleElement && descElement) {
+            titleElement.textContent = preserveProperNouns(langData.aiChat);
+            descElement.textContent = preserveProperNouns(langData.aiChatDesc);
         }
     });
 
@@ -1125,6 +1108,9 @@ function updateCurrentToolName() {
                 case 'blueprint':
                     toolName = langData.blueprint;
                     break;
+                case 'ai-chat':
+                    toolName = langData.aiChat;
+                    break;
                 default:
                     toolName = 'Unknown Tool';
             }
@@ -1237,6 +1223,261 @@ function enablePreviewZoom(container) {
 
     target.addEventListener('load', fit, { once: true });
     if (target.complete && target.naturalWidth > 0) fit();
+}
+
+// Settings Panel Module
+function initSettingsPanel() {
+    var overlay = document.getElementById('settings-overlay');
+    var openBtn = document.getElementById('settings-btn');
+    var closeBtn = document.getElementById('settings-close-btn');
+    var themeSelect = document.getElementById('settings-theme');
+
+    if (!overlay || !openBtn) return;
+
+    function open() {
+        overlay.classList.add('visible');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function close() {
+        overlay.classList.remove('visible');
+        document.body.style.overflow = '';
+    }
+
+    openBtn.addEventListener('click', open);
+    closeBtn.addEventListener('click', close);
+    overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) close();
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && overlay.classList.contains('visible')) {
+            close();
+        }
+    });
+
+    // Apply theme: localStorage > settings.json > default(light)
+    function applyTheme(theme) {
+        if (theme === 'dark') {
+            document.body.classList.remove('light-theme');
+        } else {
+            document.body.classList.add('light-theme');
+        }
+        themeSelect.value = theme === 'dark' ? 'dark' : 'light';
+    }
+
+    // Theme switch on change
+    themeSelect.addEventListener('change', function () {
+        var theme = themeSelect.value;
+        if (theme === 'dark') {
+            document.body.classList.remove('light-theme');
+        } else {
+            document.body.classList.add('light-theme');
+        }
+        localStorage.setItem('theme', theme);
+        showNotification(theme === 'light' ? '已切换到亮色主题' : '已切换到暗色主题', 'success');
+    });
+
+    // ========== AI Config ==========
+
+    var AI_LS_KEY = 'ai-chat-settings';
+    var aiConfig = { providers: [] };
+
+    var aiProviderSelect = document.getElementById('settings-ai-provider');
+    var aiDetailBlock = document.getElementById('settings-ai-detail-block');
+    var aiNameInput = document.getElementById('settings-ai-name');
+    var aiBaseUrlInput = document.getElementById('settings-ai-baseurl');
+    var aiApiKeyInput = document.getElementById('settings-ai-apikey');
+    var aiModelsList = document.getElementById('settings-ai-models-list');
+    var aiNewModelId = document.getElementById('settings-ai-new-model-id');
+    var aiNewModelName = document.getElementById('settings-ai-new-model-name');
+
+    function saveAiConfig() {
+        localStorage.setItem(AI_LS_KEY, JSON.stringify(aiConfig));
+        window.__aiConfigVersion = Date.now();
+        try { window.dispatchEvent(new CustomEvent('ai-config-changed')); } catch (e) { }
+    }
+
+    function renderAiProviderSelect() {
+        aiProviderSelect.innerHTML = '';
+        if (!aiConfig.providers || aiConfig.providers.length === 0) {
+            var opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = '暂无供应商';
+            aiProviderSelect.appendChild(opt);
+            aiDetailBlock.style.display = 'none';
+            return;
+        }
+        for (var i = 0; i < aiConfig.providers.length; i++) {
+            var opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = aiConfig.providers[i].name || ('供应商 ' + (i + 1));
+            aiProviderSelect.appendChild(opt);
+        }
+        aiProviderSelect.selectedIndex = 0;
+        showAiDetail(0);
+    }
+
+    function showAiDetail(index) {
+        if (!aiConfig.providers || index < 0 || index >= aiConfig.providers.length) {
+            aiDetailBlock.style.display = 'none';
+            return;
+        }
+        aiDetailBlock.style.display = 'block';
+        var p = aiConfig.providers[index];
+        aiNameInput.value = p.name || '';
+        aiBaseUrlInput.value = p.baseUrl || '';
+        aiApiKeyInput.value = p.apiKey || '';
+        renderAiModelsList(index);
+    }
+
+    function renderAiModelsList(providerIndex) {
+        aiModelsList.innerHTML = '';
+        var p = aiConfig.providers[providerIndex];
+        if (!p.models || p.models.length === 0) return;
+        for (var i = 0; i < p.models.length; i++) {
+            (function (m, mi) {
+                var item = document.createElement('div');
+                item.className = 'settings-ai-model-item';
+
+                var idSpan = document.createElement('span');
+                idSpan.className = 'model-id';
+                idSpan.textContent = m.id;
+                idSpan.title = m.id;
+
+                var nameSpan = document.createElement('span');
+                nameSpan.className = 'model-name';
+                nameSpan.textContent = m.name || m.id;
+
+                var delBtn = document.createElement('button');
+                delBtn.className = 'settings-ai-model-del';
+                delBtn.innerHTML = '<i class="fas fa-times"></i>';
+                delBtn.addEventListener('click', function () {
+                    p.models.splice(mi, 1);
+                    renderAiModelsList(providerIndex);
+                });
+
+                item.appendChild(idSpan);
+                item.appendChild(nameSpan);
+                item.appendChild(delBtn);
+                aiModelsList.appendChild(item);
+            })(p.models[i], i);
+        }
+    }
+
+    function collectCurrentProvider() {
+        var idx = parseInt(aiProviderSelect.value);
+        if (isNaN(idx) || !aiConfig.providers[idx]) return;
+        var p = aiConfig.providers[idx];
+        p.name = aiNameInput.value.trim();
+        p.baseUrl = aiBaseUrlInput.value.trim();
+        p.apiKey = aiApiKeyInput.value.trim();
+    }
+
+    function loadAiFromFile(fileConfig) {
+        if (fileConfig && fileConfig.providers && fileConfig.providers.length > 0) {
+            aiConfig = { providers: JSON.parse(JSON.stringify(fileConfig.providers)) };
+        }
+    }
+
+    function loadAiFromLocal() {
+        var raw = localStorage.getItem(AI_LS_KEY);
+        if (raw) {
+            try {
+                var parsed = JSON.parse(raw);
+                if (parsed && parsed.providers && parsed.providers.length > 0) {
+                    aiConfig = parsed;
+                    return true;
+                }
+            } catch (e) { }
+        }
+        return false;
+    }
+
+    // AI event handlers (must bind even if settings.json not loaded yet)
+    if (aiProviderSelect) {
+        aiProviderSelect.addEventListener('change', function () {
+            var idx = parseInt(aiProviderSelect.value);
+            showAiDetail(isNaN(idx) ? -1 : idx);
+        });
+    }
+
+    var aiSaveBtn = document.getElementById('settings-ai-save-btn');
+    if (aiSaveBtn) {
+        aiSaveBtn.addEventListener('click', function () {
+            collectCurrentProvider();
+            saveAiConfig();
+            renderAiProviderSelect();
+            showNotification('AI 配置已保存', 'success');
+        });
+    }
+
+    var aiDelBtn = document.getElementById('settings-ai-del-btn');
+    if (aiDelBtn) {
+        aiDelBtn.addEventListener('click', function () {
+            var idx = parseInt(aiProviderSelect.value);
+            if (isNaN(idx) || !aiConfig.providers[idx]) return;
+            if (!confirm('确定删除供应商 "' + (aiConfig.providers[idx].name || '未命名') + '" 吗？')) return;
+            aiConfig.providers.splice(idx, 1);
+            saveAiConfig();
+            renderAiProviderSelect();
+            showNotification('供应商已删除', 'success');
+        });
+    }
+
+    var aiNewBtn = document.getElementById('settings-ai-new-btn');
+    if (aiNewBtn) {
+        aiNewBtn.addEventListener('click', function () {
+            var newProvider = { name: '新供应商', baseUrl: '', apiKey: '', models: [] };
+            aiConfig.providers.push(newProvider);
+            saveAiConfig();
+            renderAiProviderSelect();
+            aiProviderSelect.selectedIndex = aiConfig.providers.length - 1;
+            showAiDetail(aiConfig.providers.length - 1);
+        });
+    }
+
+    var aiAddModelBtn = document.getElementById('settings-ai-add-model-btn');
+    if (aiAddModelBtn) {
+        aiAddModelBtn.addEventListener('click', function () {
+            var idVal = aiNewModelId.value.trim();
+            var nameVal = aiNewModelName.value.trim();
+            if (!idVal) return;
+            var idx = parseInt(aiProviderSelect.value);
+            if (isNaN(idx) || !aiConfig.providers[idx]) return;
+            if (!aiConfig.providers[idx].models) aiConfig.providers[idx].models = [];
+            aiConfig.providers[idx].models.push({ id: idVal, name: nameVal || idVal });
+            aiNewModelId.value = '';
+            aiNewModelName.value = '';
+            renderAiModelsList(idx);
+        });
+    }
+
+    // Load settings.json → theme + AI config merge
+    fetch('/settings.json')
+        .then(function (res) {
+            if (!res.ok) throw new Error('not found');
+            return res.json();
+        })
+        .then(function (fileConfig) {
+            var fileTheme = fileConfig && fileConfig.theme ? fileConfig.theme : 'light';
+            var savedTheme = localStorage.getItem('theme');
+            applyTheme(savedTheme || fileTheme);
+
+            if (!loadAiFromLocal()) {
+                loadAiFromFile(fileConfig);
+            }
+        })
+        .catch(function () {
+            var savedTheme = localStorage.getItem('theme') || 'light';
+            applyTheme(savedTheme);
+            if (!loadAiFromLocal()) {
+                aiConfig = { providers: [] };
+            }
+        })
+        .then(function () {
+            renderAiProviderSelect();
+        });
 }
 
 // Export for potential module usage
