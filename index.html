@@ -1267,44 +1267,11 @@
                 </div>
                 <div class="settings-group">
                     <h4>AI 对话</h4>
-                    <div class="settings-row">
-                        <span>供应商</span>
-                        <select id="settings-ai-provider"></select>
-                    </div>
-                    <div class="settings-row">
-                        <span></span>
+                    <div class="settings-ai-list" id="settings-ai-list"></div>
+                    <div class="settings-row" style="padding:0;">
                         <button class="small-btn" id="settings-ai-new-btn" style="font-size:0.75rem;">
-                            <i class="fas fa-plus"></i> 新供应商
+                            <i class="fas fa-plus"></i> 添加供应商
                         </button>
-                    </div>
-                    <div class="settings-ai-detail" id="settings-ai-detail-block" style="display:none;">
-                        <div class="settings-row">
-                            <span>名称</span>
-                            <input type="text" id="settings-ai-name" class="settings-text-input">
-                        </div>
-                        <div class="settings-row">
-                            <span>Base URL</span>
-                            <input type="text" id="settings-ai-baseurl" class="settings-text-input">
-                        </div>
-                        <div class="settings-row">
-                            <span>API Key</span>
-                            <input type="password" id="settings-ai-apikey" class="settings-text-input">
-                        </div>
-                        <div class="settings-row" style="align-items:flex-start;">
-                            <span>模型<span style="color:var(--color-text-tertiary);font-size:0.7rem;"><br>(ID / 名称)</span></span>
-                            <div class="settings-ai-models-wrap">
-                                <div id="settings-ai-models-list"></div>
-                                <div class="settings-ai-add-model">
-                                    <input type="text" id="settings-ai-new-model-id" class="settings-text-input" placeholder="模型 ID" style="flex:1;min-width:0;">
-                                    <input type="text" id="settings-ai-new-model-name" class="settings-text-input" placeholder="显示名称" style="flex:1;min-width:0;">
-                                    <button class="small-btn" id="settings-ai-add-model-btn" style="flex-shrink:0;">+</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="settings-ai-actions">
-                            <button class="settings-save-btn" id="settings-ai-save-btn" style="margin-right:var(--spacing-sm);">保存</button>
-                            <button class="small-btn" id="settings-ai-del-btn" style="color:var(--color-accent-red);"><i class="fas fa-trash"></i></button>
-                        </div>
                     </div>
                 </div>
             </div>

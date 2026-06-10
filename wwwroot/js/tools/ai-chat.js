@@ -62,7 +62,6 @@ function initAiChat() {
                 var local = JSON.parse(localRaw);
                 if (local && local.providers && local.providers.length > 0) {
                     settings = local;
-                    updateSettingsPanelStatus();
                     return Promise.resolve(local);
                 }
             } catch (e) { }
@@ -75,51 +74,13 @@ function initAiChat() {
             })
             .then(function (config) {
                 settings = config;
-                updateSettingsPanelStatus();
                 return config;
             })
             .catch(function (err) {
                 console.error('Failed to load settings.json:', err);
                 settings = null;
-                updateSettingsPanelStatus();
                 return null;
             });
-    }
-
-    function updateSettingsPanelStatus() {
-        var statusEl = document.getElementById('settings-ai-status');
-        var detailEl = document.getElementById('settings-ai-detail');
-        var providerSelect = document.getElementById('settings-ai-provider');
-        var detailBlock = document.getElementById('settings-ai-detail-block');
-
-        if (statusEl) {
-            if (settings && settings.providers && settings.providers.length > 0) {
-                var totalModels = 0;
-                for (var i = 0; i < settings.providers.length; i++) {
-                    if (settings.providers[i].models) {
-                        totalModels += settings.providers[i].models.length;
-                    }
-                }
-                statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:var(--color-accent-green)"></i> 已配置';
-                statusEl.style.color = 'var(--color-accent-green)';
-            } else {
-                statusEl.innerHTML = '<i class="fas fa-times-circle" style="color:var(--color-accent-red)"></i> 未配置';
-                statusEl.style.color = 'var(--color-accent-red)';
-            }
-        }
-        if (detailEl) {
-            if (settings && settings.providers && settings.providers.length > 0) {
-                var total = 0;
-                for (var j = 0; j < settings.providers.length; j++) {
-                    if (settings.providers[j].models) {
-                        total += settings.providers[j].models.length;
-                    }
-                }
-                detailEl.textContent = settings.providers.length + ' 个供应商，共 ' + total + ' 个模型';
-            } else {
-                detailEl.textContent = '在设置面板或 settings.json 中配置供应商';
-            }
-        }
     }
 
     function loadConversations() {

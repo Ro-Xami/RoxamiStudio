@@ -1282,96 +1282,13 @@ function initSettingsPanel() {
 
     var AI_LS_KEY = 'ai-chat-settings';
     var aiConfig = { providers: [] };
-
-    var aiProviderSelect = document.getElementById('settings-ai-provider');
-    var aiDetailBlock = document.getElementById('settings-ai-detail-block');
-    var aiNameInput = document.getElementById('settings-ai-name');
-    var aiBaseUrlInput = document.getElementById('settings-ai-baseurl');
-    var aiApiKeyInput = document.getElementById('settings-ai-apikey');
-    var aiModelsList = document.getElementById('settings-ai-models-list');
-    var aiNewModelId = document.getElementById('settings-ai-new-model-id');
-    var aiNewModelName = document.getElementById('settings-ai-new-model-name');
+    var aiList = document.getElementById('settings-ai-list');
+    var editingIndex = -1;
 
     function saveAiConfig() {
         localStorage.setItem(AI_LS_KEY, JSON.stringify(aiConfig));
         window.__aiConfigVersion = Date.now();
         try { window.dispatchEvent(new CustomEvent('ai-config-changed')); } catch (e) { }
-    }
-
-    function renderAiProviderSelect() {
-        aiProviderSelect.innerHTML = '';
-        if (!aiConfig.providers || aiConfig.providers.length === 0) {
-            var opt = document.createElement('option');
-            opt.value = '';
-            opt.textContent = '暂无供应商';
-            aiProviderSelect.appendChild(opt);
-            aiDetailBlock.style.display = 'none';
-            return;
-        }
-        for (var i = 0; i < aiConfig.providers.length; i++) {
-            var opt = document.createElement('option');
-            opt.value = i;
-            opt.textContent = aiConfig.providers[i].name || ('供应商 ' + (i + 1));
-            aiProviderSelect.appendChild(opt);
-        }
-        aiProviderSelect.selectedIndex = 0;
-        showAiDetail(0);
-    }
-
-    function showAiDetail(index) {
-        if (!aiConfig.providers || index < 0 || index >= aiConfig.providers.length) {
-            aiDetailBlock.style.display = 'none';
-            return;
-        }
-        aiDetailBlock.style.display = 'block';
-        var p = aiConfig.providers[index];
-        aiNameInput.value = p.name || '';
-        aiBaseUrlInput.value = p.baseUrl || '';
-        aiApiKeyInput.value = p.apiKey || '';
-        renderAiModelsList(index);
-    }
-
-    function renderAiModelsList(providerIndex) {
-        aiModelsList.innerHTML = '';
-        var p = aiConfig.providers[providerIndex];
-        if (!p.models || p.models.length === 0) return;
-        for (var i = 0; i < p.models.length; i++) {
-            (function (m, mi) {
-                var item = document.createElement('div');
-                item.className = 'settings-ai-model-item';
-
-                var idSpan = document.createElement('span');
-                idSpan.className = 'model-id';
-                idSpan.textContent = m.id;
-                idSpan.title = m.id;
-
-                var nameSpan = document.createElement('span');
-                nameSpan.className = 'model-name';
-                nameSpan.textContent = m.name || m.id;
-
-                var delBtn = document.createElement('button');
-                delBtn.className = 'settings-ai-model-del';
-                delBtn.innerHTML = '<i class="fas fa-times"></i>';
-                delBtn.addEventListener('click', function () {
-                    p.models.splice(mi, 1);
-                    renderAiModelsList(providerIndex);
-                });
-
-                item.appendChild(idSpan);
-                item.appendChild(nameSpan);
-                item.appendChild(delBtn);
-                aiModelsList.appendChild(item);
-            })(p.models[i], i);
-        }
-    }
-
-    function collectCurrentProvider() {
-        var idx = parseInt(aiProviderSelect.value);
-        if (isNaN(idx) || !aiConfig.providers[idx]) return;
-        var p = aiConfig.providers[idx];
-        p.name = aiNameInput.value.trim();
-        p.baseUrl = aiBaseUrlInput.value.trim();
-        p.apiKey = aiApiKeyInput.value.trim();
     }
 
     function loadAiFromFile(fileConfig) {
@@ -1394,62 +1311,250 @@ function initSettingsPanel() {
         return false;
     }
 
-    // AI event handlers (must bind even if settings.json not loaded yet)
-    if (aiProviderSelect) {
-        aiProviderSelect.addEventListener('change', function () {
-            var idx = parseInt(aiProviderSelect.value);
-            showAiDetail(isNaN(idx) ? -1 : idx);
-        });
+    function renderProviderList() {
+        aiList.innerHTML = '';
+        if (!aiConfig.providers || aiConfig.providers.length === 0) {
+            var emptyDiv = document.createElement('div');
+            emptyDiv.style.cssText = 'text-align:center;padding:var(--spacing-md);color:var(--color-text-tertiary);font-size:0.8rem;';
+            emptyDiv.textContent = '暂无供应商配置';
+            aiList.appendChild(emptyDiv);
+            return;
+        }
+        for (var i = 0; i < aiConfig.providers.length; i++) {
+            (function (index) {
+                var p = aiConfig.providers[index];
+                var isEditing = (editingIndex === index);
+
+                var row = document.createElement('div');
+                row.className = 'settings-ai-provider-row';
+                if (isEditing) row.classList.add('editing');
+                row.title = '点击编辑';
+
+                var info = document.createElement('div');
+                info.className = 'settings-ai-provider-info';
+
+                var nameDiv = document.createElement('div');
+                nameDiv.className = 'settings-ai-provider-name';
+                nameDiv.textContent = p.name || ('供应商 ' + (index + 1));
+
+                info.appendChild(nameDiv);
+
+                var actions = document.createElement('div');
+                actions.className = 'settings-ai-provider-actions';
+
+                var delBtn = document.createElement('button');
+                delBtn.className = 'small-btn';
+                delBtn.style.cssText = 'font-size:0.75rem;padding:3px 8px;color:var(--color-accent-red);';
+                delBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                delBtn.title = '删除';
+                delBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    if (!confirm('确定删除供应商 "' + (p.name || '未命名') + '" 吗？')) return;
+                    if (editingIndex === index) cancelEdit();
+                    aiConfig.providers.splice(index, 1);
+                    saveAiConfig();
+                    renderProviderList();
+                });
+
+                actions.appendChild(delBtn);
+
+                row.appendChild(info);
+                row.appendChild(actions);
+
+                row.addEventListener('click', function () {
+                    cancelEdit();
+                    editProvider(index);
+                });
+
+                aiList.appendChild(row);
+
+                if (isEditing) {
+                    var panel = buildEditPanel(index);
+                    aiList.appendChild(panel);
+                }
+            })(i);
+        }
     }
 
-    var aiSaveBtn = document.getElementById('settings-ai-save-btn');
-    if (aiSaveBtn) {
-        aiSaveBtn.addEventListener('click', function () {
-            collectCurrentProvider();
+    function buildEditPanel(index) {
+        var p = aiConfig.providers[index];
+
+        var panel = document.createElement('div');
+        panel.className = 'settings-ai-edit-panel';
+        panel.id = 'settings-ai-edit-panel';
+
+        // Name
+        var nameRow = document.createElement('div');
+        nameRow.className = 'settings-ai-edit-row';
+        var nameLabel = document.createElement('span');
+        nameLabel.textContent = '名称';
+        var nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'settings-text-input';
+        nameInput.id = 'ai-edit-name';
+        nameInput.value = p.name || '';
+        nameRow.appendChild(nameLabel);
+        nameRow.appendChild(nameInput);
+
+        // Base URL
+        var urlRow = document.createElement('div');
+        urlRow.className = 'settings-ai-edit-row';
+        var urlLabel = document.createElement('span');
+        urlLabel.textContent = 'Base URL';
+        var urlInput = document.createElement('input');
+        urlInput.type = 'text';
+        urlInput.className = 'settings-text-input';
+        urlInput.id = 'ai-edit-baseurl';
+        urlInput.value = p.baseUrl || '';
+        urlRow.appendChild(urlLabel);
+        urlRow.appendChild(urlInput);
+
+        // API Key
+        var keyRow = document.createElement('div');
+        keyRow.className = 'settings-ai-edit-row';
+        var keyLabel = document.createElement('span');
+        keyLabel.textContent = 'API Key';
+        var keyInput = document.createElement('input');
+        keyInput.type = 'password';
+        keyInput.className = 'settings-text-input';
+        keyInput.id = 'ai-edit-apikey';
+        keyInput.value = p.apiKey || '';
+        keyRow.appendChild(keyLabel);
+        keyRow.appendChild(keyInput);
+
+        // Models -- bordered box
+        var modelsRow = document.createElement('div');
+        modelsRow.className = 'settings-ai-edit-row';
+        modelsRow.style.alignItems = 'flex-start';
+        var modelsLabel = document.createElement('span');
+        modelsLabel.textContent = '模型';
+
+        var modelsBox = document.createElement('div');
+        modelsBox.className = 'settings-ai-models-box';
+
+        var modelsList = document.createElement('div');
+        modelsList.className = 'settings-ai-edit-models';
+        modelsList.id = 'ai-edit-models-list';
+
+        function renderEditModels() {
+            modelsList.innerHTML = '';
+            if (!p.models || p.models.length === 0) return;
+            for (var mi = 0; mi < p.models.length; mi++) {
+                (function (m, modelIndex) {
+                    var item = document.createElement('div');
+                    item.className = 'settings-ai-model-item';
+
+                    var idSpan = document.createElement('span');
+                    idSpan.className = 'model-id';
+                    idSpan.textContent = m.id;
+                    idSpan.title = m.id;
+
+                    var delBtn = document.createElement('button');
+                    delBtn.className = 'settings-ai-model-del';
+                    delBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    delBtn.addEventListener('click', function () {
+                        p.models.splice(modelIndex, 1);
+                        renderEditModels();
+                    });
+
+                    item.appendChild(idSpan);
+                    item.appendChild(delBtn);
+                    modelsList.appendChild(item);
+                })(p.models[mi], mi);
+            }
+        }
+        renderEditModels();
+
+        // Add model row
+        var addWrap = document.createElement('div');
+        addWrap.className = 'settings-ai-add-model';
+
+        var idInput = document.createElement('input');
+        idInput.type = 'text';
+        idInput.className = 'settings-text-input';
+        idInput.id = 'ai-edit-new-model-id';
+        idInput.placeholder = '模型 ID';
+        idInput.style.cssText = 'flex:1;min-width:0;font-size:0.8125rem;';
+
+        var addBtn = document.createElement('button');
+        addBtn.className = 'small-btn';
+        addBtn.textContent = '+';
+        addBtn.style.cssText = 'flex-shrink:0;font-size:0.8rem;padding:4px 10px;';
+        addBtn.addEventListener('click', function () {
+            var idVal = idInput.value.trim();
+            if (!idVal) return;
+            if (!p.models) p.models = [];
+            p.models.push({ id: idVal, name: idVal });
+            idInput.value = '';
+            renderEditModels();
+        });
+
+        addWrap.appendChild(idInput);
+        addWrap.appendChild(addBtn);
+
+        modelsBox.appendChild(modelsList);
+        modelsBox.appendChild(addWrap);
+        modelsRow.appendChild(modelsLabel);
+        modelsRow.appendChild(modelsBox);
+
+        // Action buttons -- same row, right-aligned
+        var actionRow = document.createElement('div');
+        actionRow.className = 'settings-ai-edit-actions';
+        actionRow.style.cssText = 'border-top:none;';
+
+        var saveBtn = document.createElement('button');
+        saveBtn.className = 'small-btn';
+        saveBtn.textContent = '保存';
+        saveBtn.style.cssText = 'background:var(--color-accent-blue);color:#fff;border-color:var(--color-accent-blue);';
+        saveBtn.addEventListener('click', function () {
+            p.name = nameInput.value.trim();
+            p.baseUrl = urlInput.value.trim();
+            p.apiKey = keyInput.value.trim();
             saveAiConfig();
-            renderAiProviderSelect();
+            cancelEdit();
+            renderProviderList();
             showNotification('AI 配置已保存', 'success');
         });
-    }
 
-    var aiDelBtn = document.getElementById('settings-ai-del-btn');
-    if (aiDelBtn) {
-        aiDelBtn.addEventListener('click', function () {
-            var idx = parseInt(aiProviderSelect.value);
-            if (isNaN(idx) || !aiConfig.providers[idx]) return;
-            if (!confirm('确定删除供应商 "' + (aiConfig.providers[idx].name || '未命名') + '" 吗？')) return;
-            aiConfig.providers.splice(idx, 1);
-            saveAiConfig();
-            renderAiProviderSelect();
-            showNotification('供应商已删除', 'success');
+        var cancelBtn = document.createElement('button');
+        cancelBtn.className = 'small-btn';
+        cancelBtn.textContent = '取消';
+        cancelBtn.addEventListener('click', function () {
+            cancelEdit();
+            renderProviderList();
         });
+
+        actionRow.appendChild(saveBtn);
+        actionRow.appendChild(cancelBtn);
+
+        panel.appendChild(nameRow);
+        panel.appendChild(urlRow);
+        panel.appendChild(keyRow);
+        panel.appendChild(modelsRow);
+        panel.appendChild(actionRow);
+        return panel;
     }
 
+    function editProvider(index) {
+        editingIndex = index;
+        renderProviderList();
+    }
+
+    function cancelEdit() {
+        editingIndex = -1;
+        var panel = document.getElementById('settings-ai-edit-panel');
+        if (panel) panel.remove();
+    }
+
+    // Add new provider
     var aiNewBtn = document.getElementById('settings-ai-new-btn');
     if (aiNewBtn) {
         aiNewBtn.addEventListener('click', function () {
+            cancelEdit();
             var newProvider = { name: '新供应商', baseUrl: '', apiKey: '', models: [] };
             aiConfig.providers.push(newProvider);
             saveAiConfig();
-            renderAiProviderSelect();
-            aiProviderSelect.selectedIndex = aiConfig.providers.length - 1;
-            showAiDetail(aiConfig.providers.length - 1);
-        });
-    }
-
-    var aiAddModelBtn = document.getElementById('settings-ai-add-model-btn');
-    if (aiAddModelBtn) {
-        aiAddModelBtn.addEventListener('click', function () {
-            var idVal = aiNewModelId.value.trim();
-            var nameVal = aiNewModelName.value.trim();
-            if (!idVal) return;
-            var idx = parseInt(aiProviderSelect.value);
-            if (isNaN(idx) || !aiConfig.providers[idx]) return;
-            if (!aiConfig.providers[idx].models) aiConfig.providers[idx].models = [];
-            aiConfig.providers[idx].models.push({ id: idVal, name: nameVal || idVal });
-            aiNewModelId.value = '';
-            aiNewModelName.value = '';
-            renderAiModelsList(idx);
+            editProvider(aiConfig.providers.length - 1);
         });
     }
 
@@ -1476,7 +1581,7 @@ function initSettingsPanel() {
             }
         })
         .then(function () {
-            renderAiProviderSelect();
+            renderProviderList();
         });
 }
 
