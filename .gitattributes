@@ -1,2 +1,2 @@
-# 模型文件——强制 LF，禁止 CRLF 转换
-wwwroot/lib/bg-removal/** text eol=lf
+# 阻止 Git 转换模型/二进制文件的换行符
+wwwroot/lib/bg-removal/** -text
