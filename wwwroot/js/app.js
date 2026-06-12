@@ -193,6 +193,12 @@ window.addEventListener('unhandledrejection', function(event) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Roxami Web Tools loaded');
 
+    // First-run: clear localStorage (install only, not on upgrade)
+    if (!localStorage.getItem('appInit')) {
+        localStorage.clear();
+        localStorage.setItem('appInit', '1');
+    }
+
     // Initialize all modules
     initSettingsPanel();
     initToolSwitcher();
@@ -328,6 +334,9 @@ function initThemeToggle() {
 
         // Save preference
         localStorage.setItem('theme', theme);
+        if (typeof window._saveSettingsToFile === 'function') {
+            window._saveSettingsToFile();
+        }
 
         // Notify user
         showNotification(`Switched to ${theme} theme`);
@@ -1275,6 +1284,7 @@ function initSettingsPanel() {
             document.body.classList.add('light-theme');
         }
         localStorage.setItem('theme', theme);
+        saveSettingsToFile();
         showNotification(theme === 'light' ? '已切换到亮色主题' : '已切换到暗色主题', 'success');
     });
 
@@ -1289,7 +1299,21 @@ function initSettingsPanel() {
         localStorage.setItem(AI_LS_KEY, JSON.stringify(aiConfig));
         window.__aiConfigVersion = Date.now();
         try { window.dispatchEvent(new CustomEvent('ai-config-changed')); } catch (e) { }
+        saveSettingsToFile();
     }
+
+    function saveSettingsToFile() {
+        var theme = localStorage.getItem('theme') || 'light';
+        fetch('/api/settings/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                theme: theme,
+                providers: aiConfig.providers
+            })
+        }).catch(function() {});
+    }
+    window._saveSettingsToFile = saveSettingsToFile;
 
     function loadAiFromFile(fileConfig) {
         if (fileConfig && fileConfig.providers && fileConfig.providers.length > 0) {
@@ -1558,8 +1582,8 @@ function initSettingsPanel() {
         });
     }
 
-    // Load settings.json → theme + AI config merge
-    fetch('/settings.json')
+    // Load settings from API → theme + AI config
+    fetch('/api/settings/load')
         .then(function (res) {
             if (!res.ok) throw new Error('not found');
             return res.json();
@@ -1583,6 +1607,125 @@ function initSettingsPanel() {
         .then(function () {
             renderProviderList();
         });
+
+    // ============================================================
+    //  UPDATE CHECK
+    // ============================================================
+    var updateData = null;
+    var downloading = false;
+
+    var checkUpdateBtn = document.getElementById('settings-check-update-btn');
+    var doUpdateBtn = document.getElementById('settings-do-update-btn');
+    var updateNewRow = document.getElementById('update-new-row');
+    var updateNotes = document.getElementById('update-notes');
+    var updateLatestVer = document.getElementById('update-latest-ver');
+    var updateCurrentVer = document.getElementById('update-current-ver');
+    var updateProgressRow = document.getElementById('update-progress-row');
+    var updateProgressBar = document.getElementById('update-progress-bar');
+    var updateProgressText = document.getElementById('update-progress-text');
+
+    function checkUpdate(showOk) {
+        if (checkUpdateBtn) {
+            checkUpdateBtn.disabled = true;
+            checkUpdateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+        }
+        fetch('/api/update/check')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.error) throw new Error(data.error);
+                updateData = data;
+                if (updateCurrentVer) updateCurrentVer.textContent = 'v' + (data.current || '-');
+                if (data.hasUpdate) {
+                    if (updateNewRow) updateNewRow.style.display = 'flex';
+                    if (updateLatestVer) updateLatestVer.textContent = 'v' + data.latest;
+                    if (updateNotes) {
+                        updateNotes.style.display = 'block';
+                        updateNotes.textContent = data.notes || 'No release notes.';
+                    }
+                    if (doUpdateBtn) doUpdateBtn.style.display = '';
+                    if (showOk !== false) {
+                        showNotification('New version available: v' + data.latest, 'info');
+                    }
+                } else {
+                    if (updateNewRow) updateNewRow.style.display = 'none';
+                    if (updateNotes) updateNotes.style.display = 'none';
+                    if (doUpdateBtn) doUpdateBtn.style.display = 'none';
+                    if (showOk) {
+                        showNotification('You have the latest version.', 'info');
+                    }
+                }
+            })
+            .catch(function(err) {
+                showNotification('Check failed: ' + err.message, 'error');
+            })
+            .finally(function() {
+                if (checkUpdateBtn) {
+                    checkUpdateBtn.disabled = false;
+                    checkUpdateBtn.innerHTML = '<i class="fas fa-sync-alt"></i> 检查更新';
+                }
+            });
+    }
+
+    function doUpdate() {
+        if (downloading) return;
+        if (!updateData || !updateData.latest) return;
+        downloading = true;
+
+        if (updateProgressRow) updateProgressRow.style.display = 'flex';
+        if (doUpdateBtn) {
+            doUpdateBtn.disabled = true;
+            doUpdateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
+        }
+
+        var evtSource = new EventSource('/api/update/download');
+        evtSource.addEventListener('status', function(e) {
+            if (updateProgressText) updateProgressText.textContent = e.data;
+        });
+        evtSource.addEventListener('progress', function(e) {
+            try {
+                var d = JSON.parse(e.data);
+                if (updateProgressBar) updateProgressBar.style.width = d.pct + '%';
+                if (updateProgressText) updateProgressText.textContent = d.pct + '% (' + d.sizeMB + 'MB)';
+            } catch(ex) {}
+        });
+        evtSource.addEventListener('done', function(e) {
+            evtSource.close();
+            try {
+                var d = JSON.parse(e.data);
+                if (updateProgressText) updateProgressText.textContent = 'Installing...';
+                if (updateProgressBar) updateProgressBar.style.width = '100%';
+                // Trigger install
+                fetch('/api/update/install', { method: 'POST' }).then(function() {
+                    // Browser will disconnect when server restarts
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 3000);
+                });
+            } catch(ex) {
+                showNotification('Update failed.', 'error');
+                downloading = false;
+            }
+        });
+        evtSource.addEventListener('error', function(e) {
+            evtSource.close();
+            downloading = false;
+            if (doUpdateBtn) {
+                doUpdateBtn.disabled = false;
+                doUpdateBtn.innerHTML = '<i class="fas fa-download"></i> 立即更新';
+            }
+            showNotification('Download failed. Please try again later.', 'error');
+        });
+    }
+
+    if (checkUpdateBtn) {
+        checkUpdateBtn.addEventListener('click', function() { checkUpdate(true); });
+    }
+    if (doUpdateBtn) {
+        doUpdateBtn.addEventListener('click', function() { doUpdate(); });
+    }
+
+    // Auto-check on startup (silent)
+    setTimeout(function() { checkUpdate(false); }, 2000);
 }
 
 // Export for potential module usage

@@ -67,9 +67,9 @@ function initAiChat() {
             } catch (e) { }
         }
 
-        return fetch('/settings.json', { cache: 'no-cache' })
+        return fetch('/api/settings/load', { cache: 'no-cache' })
             .then(function (res) {
-                if (!res.ok) throw new Error('settings.json not found (HTTP ' + res.status + ')');
+                if (!res.ok) throw new Error('settings load failed (HTTP ' + res.status + ')');
                 return res.json();
             })
             .then(function (config) {
@@ -77,7 +77,7 @@ function initAiChat() {
                 return config;
             })
             .catch(function (err) {
-                console.error('Failed to load settings.json:', err);
+                console.error('Failed to load settings:', err);
                 settings = null;
                 return null;
             });
@@ -86,7 +86,25 @@ function initAiChat() {
     function loadConversations() {
         try {
             var raw = localStorage.getItem(LS_KEY);
-            conversations = raw ? JSON.parse(raw) : [];
+            if (raw) {
+                conversations = JSON.parse(raw);
+            } else {
+                fetch('/api/conversations/load')
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (Array.isArray(data) && data.length > 0) {
+                            conversations = data;
+                            currentConvId = conversations[0].id;
+                            localStorage.setItem(LS_KEY, JSON.stringify(conversations));
+                            localStorage.setItem(LS_CURRENT_KEY, currentConvId);
+                            renderConversationList();
+                            renderMessages();
+                            renderModelBar();
+                        }
+                    })
+                    .catch(function() {});
+                conversations = [];
+            }
             var savedId = localStorage.getItem(LS_CURRENT_KEY);
             if (savedId && conversations.some(function (c) { return c.id === savedId; })) {
                 currentConvId = savedId;
@@ -102,6 +120,11 @@ function initAiChat() {
     function saveConversations() {
         localStorage.setItem(LS_KEY, JSON.stringify(conversations));
         localStorage.setItem(LS_CURRENT_KEY, currentConvId || '');
+        fetch('/api/conversations/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(conversations)
+        }).catch(function() {});
     }
 
     function getCurrentConversation() {

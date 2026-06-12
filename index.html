@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roxami Studio</title>
     <link rel="stylesheet" href="wwwroot/css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" crossorigin="anonymous">
+    <link rel="stylesheet" href="wwwroot/lib/font-awesome/css/all.min.css">
+    <link rel="stylesheet" href="wwwroot/lib/fonts/inter.css">
     <link rel="icon" type="image/x-icon" href="wwwroot/images/roxami_icon.ico">
     <!-- ESM import map for background remover -->
     <script type="importmap">
     {
         "imports": {
-            "onnxruntime-web": "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0-dev.20250206-d981b153d3/dist/ort.all.min.mjs",
-            "onnxruntime-web/webgpu": "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0-dev.20250206-d981b153d3/dist/ort.webgpu.min.mjs"
+            "onnxruntime-web": "./wwwroot/lib/bg-removal/ort.all.min.mjs",
+            "onnxruntime-web/webgpu": "./wwwroot/lib/bg-removal/ort.webgpu.min.mjs"
         }
     }
     </script>
@@ -23,10 +23,10 @@
         console.log('Background Removal library loaded');
     </script>
     <!-- Three.js for 3D preview -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.min.js" crossorigin="anonymous"></script>
+    <script src="wwwroot/lib/three/three.min.js"></script>
+    <script src="wwwroot/lib/three/GLTFLoader.min.js"></script>
     <!-- Marked.js for Markdown rendering -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="wwwroot/lib/marked/marked.min.js"></script>
 </head>
 <body class="light-theme">
     <div class="app-container">
@@ -1271,6 +1271,32 @@
                     <div class="settings-row" style="padding:0;">
                         <button class="small-btn" id="settings-ai-new-btn" style="font-size:0.75rem;">
                             <i class="fas fa-plus"></i> 添加供应商
+                        </button>
+                    </div>
+                </div>
+                <div class="settings-group" id="settings-update-group">
+                    <h4>更新</h4>
+                    <div class="settings-row">
+                        <span>当前版本</span>
+                        <span id="update-current-ver" style="color:var(--color-text-tertiary)">-</span>
+                    </div>
+                    <div class="settings-row" id="update-new-row" style="display:none;">
+                        <span>最新版本</span>
+                        <span id="update-latest-ver" style="color:var(--color-accent-green);font-weight:600;">-</span>
+                    </div>
+                    <div id="update-notes" style="display:none;margin:8px 0;padding:8px;background:var(--color-bg-tertiary);border-radius:6px;font-size:0.8rem;max-height:120px;overflow-y:auto;white-space:pre-wrap;color:var(--color-text-secondary);"></div>
+                    <div class="settings-row" id="update-progress-row" style="display:none;">
+                        <div class="progress-bar-bg" style="flex:1;">
+                            <div class="progress-bar-fill" id="update-progress-bar" style="width:0%;"></div>
+                        </div>
+                        <span id="update-progress-text" style="font-size:0.75rem;margin-left:8px;min-width:60px;">0%</span>
+                    </div>
+                    <div class="settings-row">
+                        <button class="small-btn" id="settings-check-update-btn" style="font-size:0.75rem;">
+                            <i class="fas fa-sync-alt"></i> 检查更新
+                        </button>
+                        <button class="small-btn" id="settings-do-update-btn" style="font-size:0.75rem;background:var(--color-accent-green);display:none;">
+                            <i class="fas fa-download"></i> 立即更新
                         </button>
                     </div>
                 </div>
