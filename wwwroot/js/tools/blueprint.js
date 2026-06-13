@@ -83,7 +83,6 @@ function initBlueprint() {
             { name: '阈值', key: 'denoiseThreshold', type: 'range', default: 15, min: 1, max: 100 }
         ]},
         'bg-remove': { category: '特效', name: 'AI 去背景', icon: 'fa-user-slash', color: '#8b5cf6', inputs: [{ name: '图片', type: 'image' }], outputs: [{ name: '图片', type: 'image' }], params: [
-            { name: '输出类型', key: 'outputType', type: 'select', default: 'foreground', options: ['foreground', 'mask', 'background'] },
             { name: '背景填充', key: 'bgFill', type: 'select', default: 'none', options: ['none', 'white', 'black'] }
         ]},
         'export': { category: '输出', name: '导出', icon: 'fa-download', color: '#f44336', inputs: [{ name: '图片', type: 'image' }], outputs: [], params: [
@@ -998,20 +997,13 @@ function initBlueprint() {
             const inputVal = getInputValue(node.id, typeDef.inputs[0].name);
             if (!inputVal) throw new Error('缺少输入图片');
             const inputs = Array.isArray(inputVal) ? inputVal : [inputVal];
-            const lib = window.__bgRemovalLib;
-            if (!lib) throw new Error('AI 模型尚未加载，请先访问 AI 去背景工具页以激活模型');
-            const outputType = node.params.outputType || 'foreground';
             const bgFill = node.params.bgFill || 'none';
-            const bgPath = new URL('./wwwroot/lib/bg-removal/dist/', location.href).href;
-            let processFn = lib.removeBackground;
-            if (outputType === 'mask') processFn = lib.segmentForeground || lib.alphamask;
-            if (outputType === 'background') processFn = lib.removeForeground;
             const results = [];
             for (const src of inputs) {
                 const blob = await canvasToBlob(src);
-                const resultBlob = await processFn(blob, { publicPath: bgPath, model: 'isnet_fp16', device: 'gpu', output: { format: 'image/png' } });
+                let resultBlob = await window.__rmbg14.removeBackground(blob);
                 let resultCanvas = await blobToCanvas(resultBlob);
-                if (outputType === 'foreground' && bgFill !== 'none') {
+                if (bgFill !== 'none') {
                     const bgColor = bgFill === 'white' ? '#FFFFFF' : '#000000';
                     resultCanvas = await applyBackgroundFill(resultCanvas, bgColor);
                 }

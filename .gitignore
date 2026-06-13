@@ -41,3 +41,6 @@ node_modules/
 *.local.*
 settings.json
 installer_output/
+
+# AI model files (generated locally via py/export_rmbg.py)
+wwwroot/lib/bg-removal/rmbg14.onnx

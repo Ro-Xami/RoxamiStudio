@@ -57,6 +57,17 @@ python -m http.server 8080
 - **Netlify**: 拖放项目文件夹
 - **Vercel**: 导入 Git 仓库
 
+### 生成 AI 模型（首次使用）
+
+AI 去背景功能依赖 RMBG-1.4 ONNX 模型（168MB），未包含在仓库中。Clone 后需本地生成：
+
+```bash
+# 需要 ComfyUI 环境（含 PyTorch）
+D:\ComfyUI-aki-v2\python\python.exe py\export_rmbg.py
+```
+
+生成后模型位于 `wwwroot/lib/bg-removal/rmbg14.onnx`，双击 `start.bat` 即可使用。
+
 ## 项目结构
 
 ```

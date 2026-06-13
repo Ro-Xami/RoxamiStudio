@@ -8,19 +8,13 @@
     <link rel="stylesheet" href="wwwroot/lib/font-awesome/css/all.min.css">
     <link rel="stylesheet" href="wwwroot/lib/fonts/inter.css">
     <link rel="icon" type="image/x-icon" href="wwwroot/images/roxami_icon.ico">
-    <!-- ESM import map for background remover -->
+    <!-- ESM import map for ONNX Runtime -->
     <script type="importmap">
     {
         "imports": {
-            "onnxruntime-web": "./wwwroot/lib/bg-removal/ort.all.min.mjs",
-            "onnxruntime-web/webgpu": "./wwwroot/lib/bg-removal/ort.webgpu.min.mjs"
+            "onnxruntime-web": "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0-dev.20250206-d981b153d3/dist/ort.all.min.mjs"
         }
     }
-    </script>
-    <script type="module">
-        import * as bgLib from './wwwroot/lib/bg-removal/index.mjs';
-        window.__bgRemovalLib = bgLib;
-        console.log('Background Removal library loaded');
     </script>
     <!-- Three.js for 3D preview -->
     <script src="wwwroot/lib/three/three.min.js"></script>
@@ -915,14 +909,6 @@
                                     <h3>处理选项</h3>
                                     <div class="bgrem-controls">
                                         <div class="control-group">
-                                            <label><i class="fas fa-image"></i> 输出类型:</label>
-                                            <select id="bgrem-output-type" class="select-input">
-                                                <option value="foreground">前景图（透明背景）</option>
-                                                <option value="mask">遮罩</option>
-                                                <option value="background">背景图</option>
-                                            </select>
-                                        </div>
-                                        <div class="control-group">
                                             <label><i class="fas fa-fill-drip"></i> 背景填充:</label>
                                             <select id="bgrem-bg-fill" class="select-input">
                                                 <option value="none">无</option>
@@ -979,13 +965,12 @@
                         </div>
                         <div class="tool-info-box">
                             <h4><i class="fas fa-info-circle"></i> 关于 AI 去背景</h4>
-                            <p>此工具使用本地 AI 模型（ISNet）智能识别并移除图片背景。首次使用时需要加载模型（约88MB），之后浏览器缓存即可秒开。支持输出前景图（保留透明通道）、遮罩图和背景图。</p>
+                            <p>此工具使用 AI 模型 RMBG-1.4（168MB）智能移除图片背景，效果与 ComfyUI 完全一致。首次使用时需要加载模型，之后浏览器缓存即可秒开。</p>
                             <p><strong>技术链：</strong></p>
                             <ul style="margin: var(--spacing-xs) 0; padding-left: var(--spacing-lg); font-size: 0.82rem; color: var(--color-text-tertiary); line-height: 1.8;">
-                                <li>模型：<a href="https://github.com/imgly/background-removal-js" target="_blank">ISNet (IS-Net)</a> — 高精度显著性目标检测模型</li>
+                                <li>模型：<a href="https://github.com/bria-ai/RMBG-1.4" target="_blank">BriaRMBG-1.4</a> — BriaAI 高精度背景移除模型，与 ComfyUI-Easy-Use 效果一致</li>
                                 <li>推理：<a href="https://github.com/microsoft/onnxruntime" target="_blank">ONNX Runtime Web</a> — 微软开源端侧推理引擎</li>
-                                <li>库：<a href="https://github.com/imgly/background-removal-js" target="_blank">@imgly/background-removal</a> v1.7.0 (AGPL)</li>
-                                <li>参考：<a href="https://github.com/bria-ai/RMBG-1.4" target="_blank">BriaRMBG-1.4</a> / <a href="https://github.com/PramaLLC/BEN2" target="_blank">BEN2</a> 等 ComfyUI-Easy-Use 中的去背景实现</li>
+                                <li>参考：<a href="https://github.com/imgly/background-removal-js" target="_blank">ISNet</a> / <a href="https://github.com/PramaLLC/BEN2" target="_blank">BEN2</a> 等 ComfyUI-Easy-Use 中的去背景实现</li>
                             </ul>
                             <p><strong>注意：</strong>所有处理均在您的浏览器本地完成，图片数据不会发送到服务器。由于 WebAssembly 限制，须通过 HTTP 服务器打开（双击 start.bat）。建议使用支持 WebGPU 的现代浏览器以获得最佳性能。</p>
                             <p style="color: var(--color-accent-red); font-weight: 600; margin-top: var(--spacing-sm);"><i class="fas fa-exclamation-triangle"></i> 此功能仅支持本地使用（localhost / 127.0.0.1），GitHub Pages 等在线托管平台因 HTTP/2 大文件传输限制无法运行。</p>
@@ -1319,6 +1304,7 @@
     <script src="wwwroot/js/tools/image-flipper.js"></script>
     <script src="wwwroot/js/tools/perfect-pixel.js"></script>
     <script src="wwwroot/js/tools/bg-remover.js"></script>
+    <script src="wwwroot/js/tools/rmbg14.js"></script>
     <script src="wwwroot/js/tools/blueprint.js"></script>
     <script src="wwwroot/js/tools/ai-chat.js"></script>
     <script src="wwwroot/js/app.js"></script>
