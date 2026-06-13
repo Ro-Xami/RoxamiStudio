@@ -148,9 +148,9 @@ const translations = {
         'perfectPixelDesc': '像素图精炼与网格重采样',
 
         // Blueprint tool
-        'blueprint': '蓝图节点',
+        'blueprint': '工作流',
         'blueprintDesc': '可视化节点处理素材',
-        'blueprintTitle': '蓝图节点',
+        'blueprintTitle': '工作流',
         'blueprintSubtitle': '可视化节点编辑器，通过连接节点来构建素材处理流水线。',
 
         // AI Chat tool
@@ -228,6 +228,7 @@ function initToolSwitcher() {
     toolItems.forEach(item => {
         item.addEventListener('click', function() {
             const toolId = this.getAttribute('data-tool');
+            const isCore = this.getAttribute('data-core') === 'true';
 
             // Remove active class from all tool items
             toolItems.forEach(tool => tool.classList.remove('active'));
@@ -1624,12 +1625,13 @@ function initSettingsPanel() {
     var updateProgressBar = document.getElementById('update-progress-bar');
     var updateProgressText = document.getElementById('update-progress-text');
 
-    function checkUpdate(showOk) {
+    function checkUpdate(showOk, force) {
         if (checkUpdateBtn) {
             checkUpdateBtn.disabled = true;
             checkUpdateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
         }
-        fetch('/api/update/check')
+        var url = '/api/update/check' + (force ? '?force=1' : '');
+        fetch(url)
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.error) throw new Error(data.error);
@@ -1651,12 +1653,18 @@ function initSettingsPanel() {
                     if (updateNotes) updateNotes.style.display = 'none';
                     if (doUpdateBtn) doUpdateBtn.style.display = 'none';
                     if (showOk) {
-                        showNotification('You have the latest version.', 'info');
+                        var msg = data.cached === true ? 'You have the latest version (cached).' : 'You have the latest version.';
+                        showNotification(msg, 'info');
                     }
                 }
             })
             .catch(function(err) {
-                showNotification('Check failed: ' + err.message, 'error');
+                var msg = err.message;
+                if (msg.indexOf('请隔一小时后再试') >= 0) {
+                    showNotification(msg, 'warning');
+                } else {
+                    showNotification('Check failed: ' + msg, 'error');
+                }
             })
             .finally(function() {
                 if (checkUpdateBtn) {
@@ -1678,6 +1686,9 @@ function initSettingsPanel() {
         }
 
         var evtSource = new EventSource('/api/update/download');
+        evtSource.addEventListener('mirror', function(e) {
+            if (updateProgressText) updateProgressText.textContent = '[' + e.data + '] Connecting...';
+        });
         evtSource.addEventListener('status', function(e) {
             if (updateProgressText) updateProgressText.textContent = e.data;
         });
@@ -1685,7 +1696,7 @@ function initSettingsPanel() {
             try {
                 var d = JSON.parse(e.data);
                 if (updateProgressBar) updateProgressBar.style.width = d.pct + '%';
-                if (updateProgressText) updateProgressText.textContent = d.pct + '% (' + d.sizeMB + 'MB)';
+                if (updateProgressText) updateProgressText.textContent = '[' + (d.mirror || '') + '] ' + d.pct + '% (' + d.sizeMB + 'MB)';
             } catch(ex) {}
         });
         evtSource.addEventListener('done', function(e) {
@@ -1718,7 +1729,7 @@ function initSettingsPanel() {
     }
 
     if (checkUpdateBtn) {
-        checkUpdateBtn.addEventListener('click', function() { checkUpdate(true); });
+        checkUpdateBtn.addEventListener('click', function() { checkUpdate(true, true); });
     }
     if (doUpdateBtn) {
         doUpdateBtn.addEventListener('click', function() { doUpdate(); });

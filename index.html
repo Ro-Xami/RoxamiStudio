@@ -60,17 +60,33 @@
                     </button>
                 </div>
                 <div class="tool-list">
-                    <!-- Tool items will be dynamically populated by JavaScript -->
-                    <div class="tool-item active" data-tool="blueprint">
+                    <!-- Core Features Group -->
+                    <div class="tool-group-header">核心功能</div>
+                    <div class="tool-item active" data-tool="ai-chat" data-core="true">
+                        <div class="tool-icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="tool-info">
+                            <h3>AI 对话</h3>
+                            <p>多模型 AI 聊天助手</p>
+                        </div>
+                    </div>
+                    <div class="tool-item" data-tool="blueprint" data-core="true">
                         <div class="tool-icon">
                             <i class="fas fa-project-diagram"></i>
                         </div>
                         <div class="tool-info">
-                            <h3>蓝图节点</h3>
+                            <h3>工作流</h3>
                             <p>可视化节点处理素材</p>
                         </div>
                     </div>
-                    <div class="tool-item" data-tool="3d-converter">
+
+                    <!-- Divider -->
+                    <div class="tool-divider"></div>
+
+                    <!-- Tools Group -->
+                    <div class="tool-group-header">工具</div>
+                    <div class="tool-item" data-tool="3d-converter" data-core="false">
                         <div class="tool-icon">
                             <i class="fas fa-cube"></i>
                         </div>
@@ -79,7 +95,7 @@
                             <p>将 GLB 转换为 OBJ</p>
                         </div>
                     </div>
-                    <div class="tool-item" data-tool="video-frame-extractor">
+                    <div class="tool-item" data-tool="video-frame-extractor" data-core="false">
                         <div class="tool-icon">
                             <i class="fas fa-video"></i>
                         </div>
@@ -88,7 +104,7 @@
                             <p>从视频提取序列帧</p>
                         </div>
                     </div>
-                    <div class="tool-item" data-tool="file-renamer">
+                    <div class="tool-item" data-tool="file-renamer" data-core="false">
                         <div class="tool-icon">
                             <i class="fas fa-file-signature"></i>
                         </div>
@@ -97,7 +113,7 @@
                             <p>批量重命名文件</p>
                         </div>
                     </div>
-                    <div class="tool-item" data-tool="sprite-sheet-tool">
+                    <div class="tool-item" data-tool="sprite-sheet-tool" data-core="false">
                         <div class="tool-icon">
                             <i class="fas fa-th"></i>
                         </div>
@@ -106,7 +122,7 @@
                             <p>合并多张序列图为图集，或拆分图集为序列图</p>
                         </div>
                     </div>
-                    <div class="tool-item" data-tool="image-flipper">
+                    <div class="tool-item" data-tool="image-flipper" data-core="false">
                         <div class="tool-icon">
                             <i class="fas fa-arrows-alt-h"></i>
                         </div>
@@ -115,7 +131,7 @@
                             <p>水平/垂直翻转图片，支持旋转</p>
                         </div>
                     </div>
-                    <div class="tool-item" data-tool="perfect-pixel">
+                    <div class="tool-item" data-tool="perfect-pixel" data-core="false">
                         <div class="tool-icon">
                             <i class="fas fa-th"></i>
                         </div>
@@ -124,22 +140,13 @@
                             <p>像素图精炼与网格重采样</p>
                         </div>
                     </div>
-                    <div class="tool-item" data-tool="bg-remover">
+                    <div class="tool-item" data-tool="bg-remover" data-core="false">
                         <div class="tool-icon">
                             <i class="fas fa-user-slash"></i>
                         </div>
                         <div class="tool-info">
                             <h3>AI 去背景</h3>
                             <p>智能移除图片背景</p>
-                        </div>
-                    </div>
-                    <div class="tool-item" data-tool="ai-chat">
-                        <div class="tool-icon">
-                            <i class="fas fa-robot"></i>
-                        </div>
-                        <div class="tool-info">
-                            <h3>AI 对话</h3>
-                            <p>多模型 AI 聊天助手</p>
                         </div>
                     </div>
                 </div>
@@ -151,7 +158,7 @@
                     <div class="breadcrumb">
                         <span>工具</span>
                         <i class="fas fa-chevron-right"></i>
-                        <span id="current-tool-name">蓝图节点</span>
+                        <span id="current-tool-name">工作流</span>
                     </div>
                     <div class="tool-actions">
                     </div>
@@ -812,9 +819,9 @@
                     </div>
 
                     <!-- Blueprint Node Editor -->
-                    <div class="tool-placeholder active" id="blueprint">
-                        <div class="placeholder-header">
-                            <h2><i class="fas fa-project-diagram"></i> 蓝图节点</h2>
+                    <div class="tool-placeholder" id="blueprint" data-core="true">
+                        <div class="placeholder-header" style="display:none;">
+                            <h2><i class="fas fa-project-diagram"></i> 工作流</h2>
                             <p>可视化节点编辑器，通过连接节点来构建素材处理流水线。</p>
                         </div>
                         <div class="bp-main-container">
@@ -874,8 +881,8 @@
                                 <button class="bp-btn-small" id="bp-template-close">关闭</button>
                             </div>
                         </div>
-                        <div class="tool-info-box">
-                            <h4><i class="fas fa-info-circle"></i> 关于蓝图节点</h4>
+                        <div class="tool-info-box" style="display:none;">
+                            <h4><i class="fas fa-info-circle"></i> 关于工作流</h4>
                             <p>蓝图节点是一个可视化编程工具，通过拖拽和连接节点来构建素材处理流水线。支持加载图片、调整大小、翻转旋转、裁剪、色彩调整、灰度化、阈值、混合和导出等操作。</p>
                             <p><strong>操作提示：</strong>从右侧面板拖拽节点到画布，或在画布上右键搜索节点。从节点输出端口拖线到输入端口建立连接。点击执行按钮运行整个流程。所有处理均在浏览器本地完成。</p>
                         </div>
@@ -985,8 +992,8 @@
                         </div>
                     </div>
                     <!-- AI Chat Tool -->
-                    <div class="tool-placeholder" id="ai-chat">
-                        <div class="placeholder-header">
+                    <div class="tool-placeholder active" id="ai-chat" data-core="true">
+                        <div class="placeholder-header" style="display:none;">
                             <h2><i class="fas fa-robot"></i> AI 对话</h2>
                             <p>通过 OpenRouter 等 API 与 AI 进行多轮对话，支持流式输出和 Markdown 渲染。</p>
                         </div>

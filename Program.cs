@@ -11,6 +11,7 @@ using System.Threading;
 class Program
 {
     const string AppVersion = "1.0.0";
+    const string AppMutexName = "RoxamiStudio_SingleInstance_Mutex";
 
     const string DefaultSettings = """
 {
@@ -34,10 +35,35 @@ class Program
     static string _exePath = "";
     static Dictionary<string, string> MimeTypes = new();
     static bool _running = true;
+    static Mutex? _appMutex;
 
     // Update: download state
     static string? _installFile;
     static readonly object _installLock = new();
+
+    // Update: caching (avoids GitHub API rate limit)
+    static DateTime _updateCacheTime = DateTime.MinValue;
+    static string? _updateCacheTag;
+    static string? _updateCacheVer;
+    static string? _updateCacheNotes;
+    static string? _updateCacheUrl;
+    const int UpdateCacheMinutes = 60;
+
+    // Windows API imports for window activation
+    [DllImport("user32.dll")]
+    private static extern IntPtr FindWindow(string? lpClassName, string? lpWindowName);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsIconic(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    private const int SW_RESTORE = 9;
+    private const int SW_SHOW = 5;
 
     static void Main(string[] args)
     {
@@ -62,7 +88,109 @@ class Program
                 Thread.Sleep(delayMs);
         }
 
-        RunServer();
+        // Single instance check
+        bool isFirstInstance = TryAcquireAppMutex();
+        if (!isFirstInstance)
+        {
+            // Activate existing instance's browser window
+            ActivateExistingInstance();
+            return;
+        }
+
+        try
+        {
+            RunServer();
+        }
+        finally
+        {
+            _appMutex?.ReleaseMutex();
+            _appMutex?.Dispose();
+        }
+    }
+
+    // Single instance: Mutex acquisition
+    static bool TryAcquireAppMutex()
+    {
+        try
+        {
+            _appMutex = new Mutex(true, AppMutexName, out bool createdNew);
+            return createdNew;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    // Activate existing instance: Find and bring browser window to front
+    static void ActivateExistingInstance()
+    {
+        try
+        {
+            // Try to find browser windows associated with localhost
+            // First, check common browser processes that might have opened the app
+            Process[] allProcesses = Process.GetProcesses();
+            
+            foreach (Process proc in allProcesses)
+            {
+                try
+                {
+                    // Look for chrome, firefox, edge, or other browser windows
+                    string procName = proc.ProcessName.ToLower();
+                    if (procName.Contains("chrome") || procName.Contains("firefox") || 
+                        procName.Contains("edge") || procName.Contains("iexplore") ||
+                        procName.Contains("opera"))
+                    {
+                        IntPtr mainWnd = proc.MainWindowHandle;
+                        if (mainWnd != IntPtr.Zero)
+                        {
+                            // Restore if minimized
+                            if (IsIconic(mainWnd))
+                                ShowWindow(mainWnd, SW_RESTORE);
+                            else
+                                ShowWindow(mainWnd, SW_SHOW);
+                            
+                            // Bring to front
+                            SetForegroundWindow(mainWnd);
+                            return;
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            // Fallback: Try generic window search by title containing "localhost"
+            IntPtr hWnd = FindWindowByPartialTitle("localhost");
+            if (hWnd != IntPtr.Zero)
+            {
+                if (IsIconic(hWnd))
+                    ShowWindow(hWnd, SW_RESTORE);
+                else
+                    ShowWindow(hWnd, SW_SHOW);
+                
+                SetForegroundWindow(hWnd);
+            }
+        }
+        catch { }
+    }
+
+    // Helper: Find window by partial title match
+    static IntPtr FindWindowByPartialTitle(string partialTitle)
+    {
+        Process[] allProcesses = Process.GetProcesses();
+        foreach (Process proc in allProcesses)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(proc.MainWindowTitle) && 
+                    proc.MainWindowTitle.Contains(partialTitle, StringComparison.OrdinalIgnoreCase))
+                {
+                    return proc.MainWindowHandle;
+                }
+            }
+            catch { }
+        }
+        return IntPtr.Zero;
     }
 
     // ============================================================
@@ -78,9 +206,6 @@ class Program
 
         // Source = same directory as this exe
         string srcDir = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
-
-        // Kill any running instance
-        KillExistingInstances();
 
         // Default install path — user directory (no admin required)
         string defaultPath = Path.Combine(
@@ -188,8 +313,6 @@ class Program
         Console.Write("Uninstall from: " + exeDir + " ? (Y/n): ");
         string? answer = Console.ReadLine();
         if (answer != null && answer.Trim().ToLower() == "n") return;
-
-        KillExistingInstances();
 
         // Remove Start Menu
         foreach (string sm in new[] {
@@ -341,23 +464,6 @@ class Program
         }
     }
 
-    static void KillExistingInstances()
-    {
-        try
-        {
-            int currentId = Process.GetCurrentProcess().Id;
-            foreach (Process p in Process.GetProcessesByName("RoxamiStudio"))
-            {
-                if (p.Id == currentId) continue;
-                Console.WriteLine("Stopping existing instance (PID: " + p.Id + ")...");
-                p.Kill();
-                p.WaitForExit(3000);
-            }
-            Thread.Sleep(500);
-        }
-        catch { }
-    }
-
     // ============================================================
     //  HTTP SERVER
     // ============================================================
@@ -386,9 +492,6 @@ class Program
         Console.WriteLine("  Roxami Studio");
         Console.WriteLine("================================");
         Console.WriteLine();
-
-        // Kill other instances first
-        KillExistingInstances();
 
         // Find an available port starting at 8080
         bool started = false;
@@ -474,6 +577,8 @@ class Program
         string url = parts[1];
         int q = url.IndexOf('?');
         string path = (q >= 0 ? url[..q] : url).TrimStart('/');
+        string query = q >= 0 ? url[(q+1)..] : "";
+        bool forceCheck = query.Contains("force=1");
 
         // Extract POST body
         string body = "";
@@ -515,7 +620,7 @@ class Program
         }
         if (method == "GET" && path == "health") { Send(stream, 200, "ok", "text/plain; charset=utf-8"); return; }
         if (method == "GET" && path == "restart") { HandleRestart(stream, client); return; }
-        if (method == "GET" && path == "api/update/check") { HandleUpdateCheck(stream); return; }
+        if (method == "GET" && path == "api/update/check") { HandleUpdateCheck(stream, forceCheck); return; }
         if (method == "GET" && path == "api/update/download") { HandleUpdateDownload(stream); return; }
         if (method == "POST" && path == "api/update/install") { HandleUpdateInstall(stream); return; }
         if (method == "GET" && path == "api/settings/load") { HandleSettingsLoad(stream); return; }
@@ -561,9 +666,23 @@ class Program
         t.Start();
     }
 
-    static void HandleUpdateCheck(NetworkStream stream)
+    static void HandleUpdateCheck(NetworkStream stream, bool force)
     {
         string json;
+
+        // Return cache if fresh and not forced
+        if (!force && (DateTime.UtcNow - _updateCacheTime).TotalMinutes < UpdateCacheMinutes
+            && _updateCacheVer != null)
+        {
+            Console.WriteLine("[Update] Using cached check result");
+            json = BuildUpdateJson(_updateCacheVer, _updateCacheTag!, _updateCacheNotes ?? "",
+                _updateCacheUrl ?? "", true);
+            Send(stream, 200, json, "application/json; charset=utf-8");
+            return;
+        }
+
+        // Call GitHub API
+        bool rateLimited = false;
         try
         {
             using var wc = new WebClient();
@@ -574,25 +693,69 @@ class Program
             string tag = ExtractJsonValue(apiResp, "tag_name");
             string name = ExtractJsonValue(apiResp, "name");
             string body = ExtractJsonValue(apiResp, "body");
-            string url = ExtractJsonValue(apiResp, "browser_download_url");
+            string downloadUrl = ExtractJsonValue(apiResp, "browser_download_url");
             string latestVer = (tag ?? name ?? "").TrimStart('v');
 
-            if (string.IsNullOrEmpty(latestVer) || string.IsNullOrEmpty(url))
+            if (string.IsNullOrEmpty(latestVer) || string.IsNullOrEmpty(downloadUrl))
                 throw new Exception("Could not parse release info");
 
-            bool hasUpdate = CompareVersions(latestVer, AppVersion) > 0;
+            // Update cache
+            _updateCacheTime = DateTime.UtcNow;
+            _updateCacheTag = tag;
+            _updateCacheVer = latestVer;
+            _updateCacheNotes = body;
+            _updateCacheUrl = downloadUrl;
 
-            json = "{\"current\":\"" + AppVersion +
-                   "\",\"latest\":\"" + latestVer +
-                   "\",\"hasUpdate\":" + (hasUpdate ? "true" : "false") +
-                   ",\"url\":\"" + JsonEscape(url) +
-                   "\",\"notes\":\"" + JsonEscape(body ?? "") + "\"}";
+            json = BuildUpdateJson(latestVer, tag ?? "", body ?? "", downloadUrl, false);
+        }
+        catch (WebException we)
+        {
+            var resp = we.Response as HttpWebResponse;
+            if (resp != null && (int)resp.StatusCode == 403)
+                rateLimited = true;
+
+            // Fall back to cache
+            if (_updateCacheVer != null)
+            {
+                Console.WriteLine("[Update] API failed, returning cached data");
+                json = BuildUpdateJson(_updateCacheVer, _updateCacheTag!, _updateCacheNotes ?? "",
+                    _updateCacheUrl ?? "", true);
+            }
+            else if (rateLimited)
+            {
+                json = "{\"error\":\"请求次数太多，请隔一小时后再试\"}";
+            }
+            else
+            {
+                json = "{\"error\":\"" + JsonEscape(we.Message) + "\"}";
+            }
         }
         catch (Exception ex)
         {
-            json = "{\"error\":\"" + JsonEscape(ex.Message) + "\"}";
+            if (_updateCacheVer != null)
+            {
+                Console.WriteLine("[Update] API failed, returning cached data");
+                json = BuildUpdateJson(_updateCacheVer, _updateCacheTag!, _updateCacheNotes ?? "",
+                    _updateCacheUrl ?? "", true);
+            }
+            else
+            {
+                json = "{\"error\":\"" + JsonEscape(ex.Message) + "\"}";
+            }
         }
+
         Send(stream, 200, json, "application/json; charset=utf-8");
+    }
+
+    static string BuildUpdateJson(string latestVer, string tag, string notes, string downloadUrl, bool cached)
+    {
+        bool hasUpdate = CompareVersions(latestVer, AppVersion) > 0;
+        return "{\"current\":\"" + AppVersion +
+               "\",\"latest\":\"" + latestVer +
+               "\",\"hasUpdate\":" + (hasUpdate ? "true" : "false") +
+               ",\"url\":\"" + JsonEscape(downloadUrl) +
+               "\",\"notes\":\"" + JsonEscape(notes) +
+               "\",\"cached\":" + (cached ? "true" : "false") + "}";
     }
 
     static void HandleUpdateDownload(NetworkStream stream)
@@ -614,23 +777,30 @@ class Program
             "https://github.moeyy.xyz/https://github.com/Ro-Xami/RoxamiStudio/releases/download/{0}/RoxamiStudio_Setup.exe"
         };
 
-        // Get latest tag first
+        // Use cached tag from previous check; fall back to API only if missing
         string tag;
-        try
+        if (_updateCacheTag != null)
         {
-            using var wc = new WebClient();
-            wc.Headers.Add("User-Agent", "RoxamiStudio-Update/1.0");
-            wc.Headers.Add("Accept", "application/vnd.github.v3+json");
-            string apiResp = wc.DownloadString(
-                "https://api.github.com/repos/Ro-Xami/RoxamiStudio/releases/latest");
-            string t = ExtractJsonValue(apiResp, "tag_name") ?? "";
-            tag = t.Trim();
+            tag = _updateCacheTag;
         }
-        catch
+        else
         {
-            SendSSEMsg(stream, "error", "Failed to get latest version info");
-            stream.Flush();
-            return;
+            try
+            {
+                using var wc = new WebClient();
+                wc.Headers.Add("User-Agent", "RoxamiStudio-Update/1.0");
+                wc.Headers.Add("Accept", "application/vnd.github.v3+json");
+                string apiResp = wc.DownloadString(
+                    "https://api.github.com/repos/Ro-Xami/RoxamiStudio/releases/latest");
+                string t = ExtractJsonValue(apiResp, "tag_name") ?? "";
+                tag = t.Trim();
+            }
+            catch
+            {
+                SendSSEMsg(stream, "error", "Failed to get latest version info");
+                stream.Flush();
+                return;
+            }
         }
 
         string tempFile = Path.Combine(Path.GetTempPath(), "RoxamiStudio_Update.exe");
@@ -640,16 +810,22 @@ class Program
         foreach (string mirror in mirrors)
         {
             string url = mirror.Replace("{0}", tag);
+            string mirrorLabel = mirror.StartsWith("https://github.com/Ro-Xami") ? "GitHub"
+                : mirror.StartsWith("https://ghproxy.net") ? "ghproxy.net"
+                : mirror.StartsWith("https://gh-proxy.com") ? "gh-proxy.com"
+                : mirror.StartsWith("https://github.moeyy.xyz") ? "github.moeyy.xyz"
+                : "Mirror";
             Console.WriteLine("[Update] Trying: " + url);
-            SendSSEMsg(stream, "status", "Connecting to mirror...");
+            SendSSEMsg(stream, "mirror", mirrorLabel);
+            SendSSEMsg(stream, "status", "Connecting to " + mirrorLabel + "...");
             stream.Flush();
 
             try
             {
                 HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
                 req.UserAgent = "RoxamiStudio-Update/1.0";
-                req.Timeout = 10000;
-                req.ReadWriteTimeout = 30000;
+                req.Timeout = 30000;
+                req.ReadWriteTimeout = 300000;
 
                 using HttpWebResponse resp = (HttpWebResponse)req.GetResponse();
                 if (resp.StatusCode != HttpStatusCode.OK) continue;
@@ -661,16 +837,22 @@ class Program
                 byte[] buf = new byte[65536];
                 long read = 0;
                 int n;
+                var lastProgress = DateTime.MinValue;
                 while ((n = rs.Read(buf, 0, buf.Length)) > 0)
                 {
                     fs.Write(buf, 0, n);
                     read += n;
-                    string pct = total > 0 ? ((double)read / total * 100).ToString("F0") : "0";
-                    string sizeMB = (read / 1024.0 / 1024.0).ToString("F1");
-                    string totalMB = total > 0 ? (total / 1024.0 / 1024.0).ToString("F1") : "?";
-                    SendSSEMsg(stream, "progress",
-                        $"{{\"pct\":{pct},\"sizeMB\":{sizeMB},\"totalMB\":\"{totalMB}\"}}");
-                    stream.Flush();
+                    var now = DateTime.UtcNow;
+                    if ((now - lastProgress).TotalMilliseconds >= 500)
+                    {
+                        lastProgress = now;
+                        string pct = total > 0 ? ((double)read / total * 100).ToString("F0") : "0";
+                        string sizeMB = (read / 1024.0 / 1024.0).ToString("F1");
+                        string totalMB = total > 0 ? (total / 1024.0 / 1024.0).ToString("F1") : "?";
+                        SendSSEMsg(stream, "progress",
+                            $"{{\"pct\":{pct},\"sizeMB\":{sizeMB},\"totalMB\":\"{totalMB}\",\"mirror\":\"{mirrorLabel}\"}}");
+                        stream.Flush();
+                    }
                 }
                 downloaded = true;
                 break;
@@ -695,6 +877,7 @@ class Program
 
     static void HandleUpdateInstall(NetworkStream stream)
     {
+        string file;
         lock (_installLock)
         {
             if (_installFile == null || !File.Exists(_installFile))
@@ -703,41 +886,35 @@ class Program
                     "application/json; charset=utf-8");
                 return;
             }
-
+            file = _installFile;
             Send(stream, 200, "{\"status\":\"installing\"}", "application/json; charset=utf-8");
         }
 
-        // Schedule install in a background thread
-        new Thread(() =>
+        // Write batch script to run installer + restart AFTER this process exits
+        string bat = Path.Combine(Path.GetTempPath(), "roxami_update.bat");
+        File.WriteAllText(bat,
+            "@echo off\r\n" +
+            "ping 127.0.0.1 -n 3 > nul\r\n" +
+            "\"" + file + "\" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART\r\n" +
+            "start \"\" \"" + _exePath + "\"\r\n" +
+            "del \"" + bat + "\"\r\n");
+        try
         {
-            Thread.Sleep(800);
-            try
+            Process.Start(new ProcessStartInfo
             {
-                string file;
-                lock (_installLock) { file = _installFile!; }
+                FileName = bat,
+                UseShellExecute = true,
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden
+            });
+        }
+        catch { }
 
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = file,
-                    Arguments = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART",
-                    UseShellExecute = true
-                })?.WaitForExit(60000);
-
-                // Restart
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = _exePath,
-                    UseShellExecute = true
-                });
-            }
-            catch { }
-
-            // Shutdown current
-            Thread.Sleep(500);
-            try { _listener?.Stop(); } catch { }
-            _running = false;
-            Environment.Exit(0);
-        }) { IsBackground = true }.Start();
+        // Exit current process immediately — batch handles the rest
+        Thread.Sleep(300);
+        try { _listener?.Stop(); } catch { }
+        _running = false;
+        Environment.Exit(0);
     }
 
     // ============================================================
