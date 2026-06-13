@@ -1561,7 +1561,7 @@ function initBlueprint() {
             if (resp.ok) { const data = await resp.json(); templates = data.templates || []; }
         } catch (e) {}
         if (templates.length === 0) {
-            templates = [{ name: 'AI视频转完美像素动画', file: 'AI视频转完美像素动画.json' }];
+            templates = [{ name: 'AI视频转完美像素动画', file: 'ai-video-to-pixel.json' }];
         }
         templateList.innerHTML = '';
         templates.forEach(tmpl => {
@@ -1594,7 +1594,6 @@ function initBlueprint() {
     palette.addEventListener('mousedown', e => e.stopPropagation());
     palette.addEventListener('wheel', e => e.stopPropagation());
     contextMenu.addEventListener('mousedown', e => e.stopPropagation());
-    previewModal.addEventListener('mousedown', e => { if (e.target === previewModal) closePreviewModal(); });
     window.addEventListener('resize', () => renderAllConnections());
     function connectionRenderLoop() {
         if (dragInfo || isPanning) { renderAllConnections(); }

@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "timestamp": "2026-06-09T15:03:13.425Z",
+  "timestamp": "2026-06-13T14:43:22.019Z",
   "nodes": [
     {
       "id": "n1",
       "type": "video-frames",
-      "x": -80,
-      "y": 231,
+      "x": 201,
+      "y": 288,
       "params": {
         "fps": 12
       },
@@ -14,9 +14,19 @@
     },
     {
       "id": "n2",
+      "type": "bg-remove",
+      "x": 395,
+      "y": 287,
+      "params": {
+        "bgFill": "none"
+      },
+      "enabled": true
+    },
+    {
+      "id": "n3",
       "type": "perfect-pixel",
-      "x": 434,
-      "y": 233,
+      "x": 578,
+      "y": 288,
       "params": {
         "gridWMode": "power2",
         "gridW": "256",
@@ -32,56 +42,32 @@
       "enabled": true
     },
     {
-      "id": "n3",
+      "id": "n4",
+      "type": "export",
+      "x": 926,
+      "y": 297,
+      "params": {
+        "format": "image/png"
+      },
+      "enabled": true
+    },
+    {
+      "id": "n5",
       "type": "file-sort",
-      "x": 748,
-      "y": 233,
+      "x": 753,
+      "y": 290,
       "params": {
         "prefix": "output_",
         "startIndex": 0,
         "digits": 3
       },
       "enabled": true
-    },
-    {
-      "id": "n4",
-      "type": "export",
-      "x": 970,
-      "y": 232,
-      "params": {
-        "format": "image/png",
-        "quality": 92
-      },
-      "enabled": true
-    },
-    {
-      "id": "n5",
-      "type": "bg-remove",
-      "x": 210,
-      "y": 235,
-      "params": {
-        "outputType": "foreground",
-        "bgFill": "none"
-      },
-      "enabled": true
     }
   ],
   "connections": [
     {
-      "fromNodeId": "n3",
-      "fromPort": "图片",
-      "toNodeId": "n4",
-      "toPort": "图片"
-    },
-    {
       "fromNodeId": "n1",
       "fromPort": "帧序列",
-      "toNodeId": "n5",
-      "toPort": "图片"
-    },
-    {
-      "fromNodeId": "n5",
-      "fromPort": "图片",
       "toNodeId": "n2",
       "toPort": "图片"
     },
@@ -90,8 +76,20 @@
       "fromPort": "图片",
       "toNodeId": "n3",
       "toPort": "图片"
+    },
+    {
+      "fromNodeId": "n3",
+      "fromPort": "图片",
+      "toNodeId": "n5",
+      "toPort": "图片"
+    },
+    {
+      "fromNodeId": "n5",
+      "fromPort": "图片",
+      "toNodeId": "n4",
+      "toPort": "图片"
     }
   ],
-  "nextNodeId": 8,
-  "nextConnId": 12
+  "nextNodeId": 6,
+  "nextConnId": 5
 }

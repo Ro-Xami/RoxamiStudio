@@ -1,5 +1,5 @@
 #define MyAppName "Roxami Studio"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "Roxami"
 #define MyAppURL "https://github.com/Ro-Xami/RoxamiStudio"
 #define MyAppExeName "RoxamiStudio.exe"

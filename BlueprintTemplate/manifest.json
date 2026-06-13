@@ -1,0 +1,9 @@
+{
+    "templates": [
+        {
+            "name": "AI视频转完美像素动画",
+            "file": "ai-video-to-pixel.json",
+            "desc": "视频 → 提取帧 → 完美像素精炼 → 重命名 → 导出"
+        }
+    ]
+}
