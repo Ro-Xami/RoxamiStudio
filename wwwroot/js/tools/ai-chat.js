@@ -4,6 +4,14 @@ function initAiChat() {
     var chatContainer = document.getElementById('ai-chat');
     if (!chatContainer) return;
 
+    var toolContainer = chatContainer.parentNode;
+    if (toolContainer && toolContainer.classList.contains('tool-container')) {
+        toolContainer.style.display = 'flex';
+        toolContainer.style.flexDirection = 'column';
+        toolContainer.style.overflow = 'hidden';
+        toolContainer.style.padding = '0';
+    }
+
     var historyList = document.getElementById('ai-chat-history-list');
     var messagesArea = document.getElementById('ai-chat-messages');
     var chatInput = document.getElementById('ai-chat-input');
@@ -164,7 +172,7 @@ function initAiChat() {
     }
 
     function autoTitleConversation(conv) {
-        if (conv.title !== '新对话') return;
+        if (conv.renamed) return;
         if (conv.messages.length > 0) {
             var firstMsg = '';
             for (var i = 0; i < conv.messages.length; i++) {
@@ -222,15 +230,7 @@ function initAiChat() {
     }
 
     function renderModelBar() {
-        var conv = getCurrentConversation();
-        var labelEl = document.getElementById('ai-chat-model-label');
-        if (labelEl) {
-            if (conv && conv.model) {
-                labelEl.textContent = conv.model;
-            } else {
-                labelEl.textContent = '';
-            }
-        }
+        // Model bar removed, no longer needed
     }
 
     function renderConversationList() {
@@ -253,7 +253,40 @@ function initAiChat() {
                 var titleSpan = document.createElement('span');
                 titleSpan.className = 'chat-history-title';
                 titleSpan.textContent = conv.title || '新对话';
-                titleSpan.title = conv.title;
+
+                var renameBtn = document.createElement('button');
+                renameBtn.className = 'chat-history-rename';
+                renameBtn.innerHTML = '<i class="fas fa-pen"></i>';
+                renameBtn.title = '重命名';
+                renameBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = conv.title || '新对话';
+                    input.style.cssText = 'flex:1;min-width:0;background:var(--color-bg-tertiary);border:1px solid var(--color-active);border-radius:var(--radius-sm);color:var(--color-text-primary);font-size:0.9rem;padding:2px 6px;font-family:inherit;outline:none;';
+                    var done = function () {
+                        var v = input.value.trim();
+                        if (v) {
+                            conv.title = v;
+                            conv.renamed = true;
+                            saveConversations();
+                            renderConversationList();
+                        } else {
+                            renderConversationList();
+                        }
+                    };
+                    input.addEventListener('blur', done);
+                    input.addEventListener('keydown', function (ev) {
+                        if (ev.key === 'Enter') { input.blur(); }
+                        if (ev.key === 'Escape') {
+                            input.value = conv.title || '新对话';
+                            input.blur();
+                        }
+                    });
+                    titleSpan.replaceWith(input);
+                    input.focus();
+                    input.select();
+                });
 
                 var dateSpan = document.createElement('span');
                 dateSpan.className = 'chat-history-date';
@@ -270,6 +303,7 @@ function initAiChat() {
                 });
 
                 item.appendChild(titleSpan);
+                item.appendChild(renameBtn);
                 item.appendChild(dateSpan);
                 item.appendChild(delBtn);
 
@@ -329,7 +363,7 @@ function initAiChat() {
         content.className = 'chat-bubble-content';
 
         if (msg.role === 'assistant') {
-            content.innerHTML = msg._rendered || renderMarkdown(msg.content);
+            content.innerHTML = msg._rendered || renderFinalMarkdown(msg.content);
         } else {
             var p = document.createElement('p');
             p.textContent = msg.content;
@@ -344,23 +378,46 @@ function initAiChat() {
     function renderMarkdown(text) {
         if (typeof marked !== 'undefined' && typeof marked.parse === 'function') {
             try {
-                var html = marked.parse(text);
-                return html;
+                return marked.parse(text);
             } catch (e) {
                 return '<p>' + escapeHtml(text) + '</p>';
             }
         }
-        var lines = text.split('\n');
         var result = '';
+        var lines = text.split('\n');
         for (var i = 0; i < lines.length; i++) {
-            var line = escapeHtml(lines[i]);
-            if (line.trim() === '') {
+            var esc = escapeHtml(lines[i]);
+            if (esc.trim() === '') {
                 result += '<br>';
             } else {
-                result += '<p>' + line + '</p>';
+                result += '<p>' + esc + '</p>';
             }
         }
         return result;
+    }
+
+    function enhanceMarkdown(html) {
+        var div = document.createElement('div');
+        div.innerHTML = html;
+        var links = div.querySelectorAll('a');
+        for (var i = 0; i < links.length; i++) {
+            links[i].setAttribute('target', '_blank');
+            links[i].setAttribute('rel', 'noopener noreferrer');
+        }
+        var pres = div.querySelectorAll('pre');
+        for (var j = 0; j < pres.length; j++) {
+            var pre = pres[j];
+            pre.style.position = 'relative';
+            var btn = document.createElement('button');
+            btn.className = 'code-copy-btn';
+            btn.textContent = '复制';
+            pre.appendChild(btn);
+        }
+        return div.innerHTML;
+    }
+
+    function renderFinalMarkdown(text) {
+        return enhanceMarkdown(renderMarkdown(text));
     }
 
     function scrollToBottom() {
@@ -552,7 +609,7 @@ function initAiChat() {
 
         var content = bubble.querySelector('.chat-bubble-content');
         if (content) {
-            content.innerHTML = streamingContent ? renderMarkdown(streamingContent) : '*(无回复内容)*';
+            content.innerHTML = streamingContent ? renderFinalMarkdown(streamingContent) : '*(无回复内容)*';
             var cursor = content.querySelector('.streaming-cursor');
             if (cursor) cursor.remove();
         }
@@ -577,7 +634,7 @@ function initAiChat() {
         if (conv && finalContent) {
             var msg = { role: 'assistant', content: finalContent };
             if (!wasAborted) {
-                msg._rendered = renderMarkdown(finalContent);
+                msg._rendered = renderFinalMarkdown(finalContent);
             }
             conv.messages.push(msg);
         }
@@ -630,6 +687,45 @@ function initAiChat() {
                 abortController.abort();
                 showNotification('已停止生成', 'warning');
             }
+        });
+
+        var scrollBtn = document.getElementById('ai-chat-scroll-bottom');
+        if (scrollBtn) {
+            scrollBtn.addEventListener('click', function () {
+                scrollToBottom();
+            });
+        }
+
+        messagesArea.addEventListener('scroll', function () {
+            if (scrollBtn) {
+                var dist = messagesArea.scrollHeight - messagesArea.scrollTop - messagesArea.clientHeight;
+                if (dist > 100) {
+                    scrollBtn.classList.add('visible');
+                } else {
+                    scrollBtn.classList.remove('visible');
+                }
+            }
+        });
+
+        messagesArea.addEventListener('click', function (e) {
+            var btn = e.target.closest('.code-copy-btn');
+            if (!btn) return;
+            e.preventDefault();
+            var pre = btn.closest('pre');
+            if (!pre) return;
+            var code = pre.querySelector('code');
+            var text = code ? code.textContent : pre.textContent;
+            navigator.clipboard.writeText(text).then(function () {
+                btn.textContent = '已复制';
+                btn.classList.add('copied');
+                setTimeout(function () {
+                    btn.textContent = '复制';
+                    btn.classList.remove('copied');
+                }, 1500);
+            }).catch(function () {
+                btn.textContent = '失败';
+                setTimeout(function () { btn.textContent = '复制'; }, 1200);
+            });
         });
     }
 

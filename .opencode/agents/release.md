@@ -38,14 +38,21 @@ dotnet publish -c Release -r win-x64
 打包完成后，告诉用户：
 
 1. 安装包已生成: `E:\Git_RoXami\RoxamiStudio\installer_output\RoxamiStudio_Setup.exe`
-2. 去 GitHub 仓库 `Ro-Xami/RoxamiStudio` 的 Releases 页面:
+
+2. **上传到腾讯云 COS**（用户优先从 CDN 下载，速度最快）:
+   - 打开腾讯云 COS 控制台 → 找到存储桶 `roxami-studio-1392487426`
+   - 上传 `installer_output\RoxamiStudio_Setup.exe` 覆盖旧文件
+   - CDN 加速域名: `https://roxami-studio-1392487426.cos.accelerate.myqcloud.com/RoxamiStudio_Setup.exe`
+
+3. 去 GitHub 仓库 `Ro-Xami/RoxamiStudio` 的 Releases 页面:
    - 点 **Create a new release**
    - Tag: `v{版本号}`（如 `v1.0.2`）
    - Title: `v{版本号}`
    - 上传 `RoxamiStudio_Setup.exe`
    - 写 Release Notes
    - 点 **Publish release**
-3. 用户端会自动检测到更新（通过 `/api/update/check`）
+
+4. 用户端自动更新顺序: 腾讯云 CDN → GitHub → ghproxy → gh-proxy → moeyy
 
 ## 注意事项
 - 两个版本号文件必须同步修改

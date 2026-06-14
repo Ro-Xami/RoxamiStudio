@@ -619,6 +619,7 @@ class Program
             return;
         }
         if (method == "GET" && path == "health") { Send(stream, 200, "ok", "text/plain; charset=utf-8"); return; }
+        if (method == "GET" && path == "api/version") { Send(stream, 200, "{\"version\":\"" + AppVersion + "\"}", "application/json; charset=utf-8"); return; }
         if (method == "GET" && path == "restart") { HandleRestart(stream, client); return; }
         if (method == "GET" && path == "api/update/check") { HandleUpdateCheck(stream, forceCheck); return; }
         if (method == "GET" && path == "api/update/download") { HandleUpdateDownload(stream); return; }
@@ -693,10 +694,11 @@ class Program
             string tag = ExtractJsonValue(apiResp, "tag_name");
             string name = ExtractJsonValue(apiResp, "name");
             string body = ExtractJsonValue(apiResp, "body");
-            string downloadUrl = ExtractJsonValue(apiResp, "browser_download_url");
+            string downloadUrl = ExtractJsonValue(apiResp, "browser_download_url")
+                ?? ExtractJsonValue(apiResp, "html_url") ?? "";
             string latestVer = (tag ?? name ?? "").TrimStart('v');
 
-            if (string.IsNullOrEmpty(latestVer) || string.IsNullOrEmpty(downloadUrl))
+            if (string.IsNullOrEmpty(latestVer))
                 throw new Exception("Could not parse release info");
 
             // Update cache
@@ -771,6 +773,7 @@ class Program
         stream.Flush();
 
         string[] mirrors = {
+            "https://roxami-studio-1392487426.cos.accelerate.myqcloud.com/RoxamiStudio_Setup.exe",
             "https://github.com/Ro-Xami/RoxamiStudio/releases/download/{0}/RoxamiStudio_Setup.exe",
             "https://ghproxy.net/https://github.com/Ro-Xami/RoxamiStudio/releases/download/{0}/RoxamiStudio_Setup.exe",
             "https://gh-proxy.com/https://github.com/Ro-Xami/RoxamiStudio/releases/download/{0}/RoxamiStudio_Setup.exe",
@@ -810,7 +813,8 @@ class Program
         foreach (string mirror in mirrors)
         {
             string url = mirror.Replace("{0}", tag);
-            string mirrorLabel = mirror.StartsWith("https://github.com/Ro-Xami") ? "GitHub"
+            string mirrorLabel = mirror.StartsWith("https://roxami-studio") ? "Tencent CDN"
+                : mirror.StartsWith("https://github.com/Ro-Xami") ? "GitHub"
                 : mirror.StartsWith("https://ghproxy.net") ? "ghproxy.net"
                 : mirror.StartsWith("https://gh-proxy.com") ? "gh-proxy.com"
                 : mirror.StartsWith("https://github.moeyy.xyz") ? "github.moeyy.xyz"

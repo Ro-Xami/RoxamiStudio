@@ -65,6 +65,42 @@
                             <p>多模型 AI 聊天助手</p>
                         </div>
                     </div>
+                    <div class="tool-item" data-tool="ai-image" data-core="true">
+                        <div class="tool-icon">
+                            <i class="fas fa-image"></i>
+                        </div>
+                        <div class="tool-info">
+                            <h3>AI 图片</h3>
+                            <p>文本生成图片</p>
+                        </div>
+                    </div>
+                    <div class="tool-item" data-tool="ai-video" data-core="true">
+                        <div class="tool-icon">
+                            <i class="fas fa-video"></i>
+                        </div>
+                        <div class="tool-info">
+                            <h3>AI 视频</h3>
+                            <p>文本生成视频</p>
+                        </div>
+                    </div>
+                    <div class="tool-item" data-tool="ai-model" data-core="true">
+                        <div class="tool-icon">
+                            <i class="fas fa-cubes"></i>
+                        </div>
+                        <div class="tool-info">
+                            <h3>AI 模型</h3>
+                            <p>文本生成 3D 模型</p>
+                        </div>
+                    </div>
+                    <div class="tool-item" data-tool="ai-audio" data-core="true">
+                        <div class="tool-icon">
+                            <i class="fas fa-volume-up"></i>
+                        </div>
+                        <div class="tool-info">
+                            <h3>AI 音频</h3>
+                            <p>文本生成语音</p>
+                        </div>
+                    </div>
                     <div class="tool-item" data-tool="blueprint" data-core="true">
                         <div class="tool-icon">
                             <i class="fas fa-project-diagram"></i>
@@ -148,15 +184,6 @@
 
             <!-- Main Content Area -->
             <main class="tool-content">
-                <div class="content-header">
-                    <div class="breadcrumb">
-                        <span>工具</span>
-                        <i class="fas fa-chevron-right"></i>
-                        <span id="current-tool-name">工作流</span>
-                    </div>
-                    <div class="tool-actions">
-                    </div>
-                </div>
 
                 <div class="tool-container">
                     <!-- Tool content will be loaded here dynamically -->
@@ -978,10 +1005,6 @@
                     </div>
                     <!-- AI Chat Tool -->
                     <div class="tool-placeholder active" id="ai-chat" data-core="true">
-                        <div class="placeholder-header" style="display:none;">
-                            <h2><i class="fas fa-robot"></i> AI 对话</h2>
-                            <p>通过 OpenRouter 等 API 与 AI 进行多轮对话，支持流式输出和 Markdown 渲染。</p>
-                        </div>
                         <div class="chat-tool-ui">
                             <div class="chat-layout" id="ai-chat-layout">
                                 <div class="chat-sidebar">
@@ -993,19 +1016,20 @@
                                     <div class="chat-history-list" id="ai-chat-history-list"></div>
                                 </div>
                                 <div class="chat-main">
-                                    <div class="chat-messages" id="ai-chat-messages"></div>
+                                    <div class="chat-messages" id="ai-chat-messages">
+                                        <button class="scroll-bottom-btn" id="ai-chat-scroll-bottom" title="回到底部">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </button>
+                                    </div>
                                     <div class="chat-input-area">
                                         <textarea id="ai-chat-input" placeholder="输入消息，Enter 发送，Shift+Enter 换行" rows="2"></textarea>
                                         <button class="small-btn" id="ai-chat-send-btn">
                                             <i class="fas fa-paper-plane"></i>
                                         </button>
                                     </div>
-                                    <div class="chat-model-bar" id="ai-chat-model-bar">
-                                        <span class="chat-model-label" id="ai-chat-model-label"></span>
-                                        <div class="chat-model-selectors">
-                                            <select id="ai-chat-provider-select" title="供应商"></select>
-                                            <select id="ai-chat-model-select" title="模型"></select>
-                                        </div>
+                                    <div class="chat-config-bar">
+                                        <select id="ai-chat-provider-select" title="供应商"></select>
+                                        <select id="ai-chat-model-select" title="模型"></select>
                                     </div>
                                 </div>
                             </div>
@@ -1017,21 +1041,76 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- AI Image -->
+                    <div class="tool-placeholder" id="ai-image">
+                        <div class="chat-tool-ui">
+                            <div class="chat-layout" id="ai-image-layout">
+                                <div class="chat-sidebar"><div class="chat-sidebar-header"><button class="small-btn chat-new-btn"><i class="fas fa-plus"></i> 新对话</button></div><div class="chat-history-list"></div></div>
+                                <div class="chat-main">
+                                    <div class="chat-messages"><button class="scroll-bottom-btn" title="回到底部"><i class="fas fa-chevron-down"></i></button></div>
+                                    <div class="chat-input-area"><textarea class="chat-input" placeholder="描述你想要生成的图片..." rows="2"></textarea><button class="small-btn chat-send-btn"><i class="fas fa-paper-plane"></i></button></div>
+                                    <div class="chat-config-bar"></div>
+                                </div>
+                            </div>
+                            <div class="chat-setup-prompt" style="display:none"><div class="chat-setup-icon"><i class="fas fa-cog"></i></div><h3>AI 图片未配置</h3><p>请在设置面板中配置 API。</p></div>
+                        </div>
+                    </div>
+
+                    <!-- AI Video -->
+                    <div class="tool-placeholder" id="ai-video">
+                        <div class="chat-tool-ui">
+                            <div class="chat-layout" id="ai-video-layout">
+                                <div class="chat-sidebar"><div class="chat-sidebar-header"><button class="small-btn chat-new-btn"><i class="fas fa-plus"></i> 新对话</button></div><div class="chat-history-list"></div></div>
+                                <div class="chat-main">
+                                    <div class="chat-messages"><button class="scroll-bottom-btn" title="回到底部"><i class="fas fa-chevron-down"></i></button></div>
+                                    <div class="chat-input-area"><textarea class="chat-input" placeholder="描述你想要生成的视频..." rows="2"></textarea><button class="small-btn chat-send-btn"><i class="fas fa-paper-plane"></i></button></div>
+                                    <div class="chat-config-bar"></div>
+                                </div>
+                            </div>
+                            <div class="chat-setup-prompt" style="display:none"><div class="chat-setup-icon"><i class="fas fa-cog"></i></div><h3>AI 视频未配置</h3><p>请在设置面板中配置 API。</p></div>
+                        </div>
+                    </div>
+
+                    <!-- AI Model -->
+                    <div class="tool-placeholder" id="ai-model">
+                        <div class="chat-tool-ui">
+                            <div class="chat-layout" id="ai-model-layout">
+                                <div class="chat-sidebar"><div class="chat-sidebar-header"><button class="small-btn chat-new-btn"><i class="fas fa-plus"></i> 新对话</button></div><div class="chat-history-list"></div></div>
+                                <div class="chat-main">
+                                    <div class="chat-messages"><button class="scroll-bottom-btn" title="回到底部"><i class="fas fa-chevron-down"></i></button></div>
+                                    <div class="chat-input-area"><textarea class="chat-input" placeholder="描述你想要生成的 3D 模型..." rows="2"></textarea><button class="small-btn chat-send-btn"><i class="fas fa-paper-plane"></i></button></div>
+                                    <div class="chat-config-bar"></div>
+                                </div>
+                            </div>
+                            <div class="chat-setup-prompt" style="display:none"><div class="chat-setup-icon"><i class="fas fa-cog"></i></div><h3>AI 模型未配置</h3><p>请在设置面板中配置 API。</p></div>
+                        </div>
+                    </div>
+
+                    <!-- AI Audio -->
+                    <div class="tool-placeholder" id="ai-audio">
+                        <div class="chat-tool-ui">
+                            <div class="chat-layout" id="ai-audio-layout">
+                                <div class="chat-sidebar"><div class="chat-sidebar-header"><button class="small-btn chat-new-btn"><i class="fas fa-plus"></i> 新对话</button></div><div class="chat-history-list"></div></div>
+                                <div class="chat-main">
+                                    <div class="chat-messages"><button class="scroll-bottom-btn" title="回到底部"><i class="fas fa-chevron-down"></i></button></div>
+                                    <div class="chat-input-area"><textarea class="chat-input" placeholder="输入要转换为语音的文字..." rows="2"></textarea><button class="small-btn chat-send-btn"><i class="fas fa-paper-plane"></i></button></div>
+                                    <div class="chat-config-bar"></div>
+                                </div>
+                            </div>
+                            <div class="chat-setup-prompt" style="display:none"><div class="chat-setup-icon"><i class="fas fa-cog"></i></div><h3>AI 音频未配置</h3><p>请在设置面板中配置 API。</p></div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="content-footer">
-                    <p class="footer-info">
-                        <i class="fas fa-exclamation-circle"></i>
-                        所有处理均在您的浏览器中完成。数据不会发送到服务器。
-                    </p>
-                </div>
+
             </main>
         </div>
 
         <!-- Footer -->
         <footer class="app-footer">
             <div class="footer-content">
-                <p>&copy; 2026 Roxami Studio</p>
+                <p><i class="fas fa-lock" style="font-size:0.7rem;opacity:0.6;"></i> 所有处理均在您的浏览器和本地中进行，相关数据存储在本地 settings.json 中。</p>
                 <div class="footer-links">
                     <a href="https://github.com/Ro-Xami/RoxamiStudio/blob/main/README.md" target="_blank"><i class="fas fa-question-circle"></i> 帮助</a>
                     <a href="https://github.com/Ro-Xami/RoxamiStudio" target="_blank"><i class="fas fa-code-branch"></i> GitHub</a>
@@ -1266,6 +1345,26 @@
                         </button>
                     </div>
                 </div>
+                <div class="settings-group" id="settings-group-ai-image">
+                    <h4>AI 图片</h4>
+                    <div class="settings-ai-list" id="settings-aiimage-list"></div>
+                    <div class="settings-row" style="padding:0;"><button class="small-btn" id="settings-aiimage-list-add-btn" style="font-size:0.75rem;"><i class="fas fa-plus"></i> 添加供应商</button></div>
+                </div>
+                <div class="settings-group" id="settings-group-ai-video">
+                    <h4>AI 视频</h4>
+                    <div class="settings-ai-list" id="settings-aivideo-list"></div>
+                    <div class="settings-row" style="padding:0;"><button class="small-btn" id="settings-aivideo-list-add-btn" style="font-size:0.75rem;"><i class="fas fa-plus"></i> 添加供应商</button></div>
+                </div>
+                <div class="settings-group" id="settings-group-ai-model">
+                    <h4>AI 模型</h4>
+                    <div class="settings-ai-list" id="settings-aimodel-list"></div>
+                    <div class="settings-row" style="padding:0;"><button class="small-btn" id="settings-aimodel-list-add-btn" style="font-size:0.75rem;"><i class="fas fa-plus"></i> 添加供应商</button></div>
+                </div>
+                <div class="settings-group" id="settings-group-ai-audio">
+                    <h4>AI 音频</h4>
+                    <div class="settings-ai-list" id="settings-aiaudio-list"></div>
+                    <div class="settings-row" style="padding:0;"><button class="small-btn" id="settings-aiaudio-list-add-btn" style="font-size:0.75rem;"><i class="fas fa-plus"></i> 添加供应商</button></div>
+                </div>
                 <div class="settings-group" id="settings-update-group">
                     <h4>更新</h4>
                     <div class="settings-row">
@@ -1307,6 +1406,12 @@
     <script src="wwwroot/js/tools/rmbg14.js"></script>
     <script src="wwwroot/js/tools/blueprint.js"></script>
     <script src="wwwroot/js/tools/ai-chat.js"></script>
+    <script src="wwwroot/js/lib/ai-core.js"></script>
+    <script src="wwwroot/js/lib/ai-gen-chat.js"></script>
+    <script src="wwwroot/js/tools/ai-image.js"></script>
+    <script src="wwwroot/js/tools/ai-video.js"></script>
+    <script src="wwwroot/js/tools/ai-model.js"></script>
+    <script src="wwwroot/js/tools/ai-audio.js"></script>
     <script src="wwwroot/js/app.js"></script>
 </body>
 </html>

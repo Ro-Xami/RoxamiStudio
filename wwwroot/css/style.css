@@ -93,7 +93,7 @@ body {
 .app-container {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    height: 100vh;
     max-width: 100vw;
     overflow: hidden;
 }
@@ -189,6 +189,7 @@ body {
 .main-content {
     display: flex;
     flex: 1;
+    min-height: 0;
     overflow: hidden;
 }
 
@@ -372,38 +373,6 @@ body {
     transition: background-color var(--transition-normal);
 }
 
-.content-header {
-    padding: var(--spacing-lg) var(--spacing-xl);
-    border-bottom: 1px solid var(--color-border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: var(--color-bg-secondary);
-    transition: background-color var(--transition-normal), border-color var(--transition-normal);
-}
-
-.breadcrumb {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
-}
-
-.breadcrumb i {
-    font-size: 0.75rem;
-}
-
-#current-tool-name {
-    font-weight: 600;
-    color: var(--color-text-primary);
-}
-
-.tool-actions {
-    display: flex;
-    gap: var(--spacing-sm);
-}
-
 .action-btn {
     background: none;
     border: 1px solid var(--color-border);
@@ -428,8 +397,21 @@ body {
 /* Tool Container */
 .tool-container {
     flex: 1;
+    min-height: 0;
     padding: var(--spacing-xl);
     overflow-y: auto;
+}
+
+/* Make tool-container a flex column when any AI tool is active */
+.tool-container:has(#ai-chat.active),
+.tool-container:has(#ai-image.active),
+.tool-container:has(#ai-video.active),
+.tool-container:has(#ai-model.active),
+.tool-container:has(#ai-audio.active) {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0;
 }
 
 .tool-placeholder {
@@ -439,6 +421,14 @@ body {
 
 .tool-placeholder.active {
     display: block;
+}
+
+#ai-chat.tool-placeholder.active {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
 }
 
 @keyframes fadeIn {
@@ -742,17 +732,6 @@ body {
 
     .placeholder-header h2 {
         font-size: 1.5rem;
-    }
-
-    .content-header {
-        padding: var(--spacing-md) var(--spacing-lg);
-        flex-direction: column;
-        align-items: flex-start;
-        gap: var(--spacing-md);
-    }
-
-    .tool-actions {
-        align-self: flex-end;
     }
 
     .footer-content {
@@ -2549,17 +2528,37 @@ body {
 
 #ai-chat.tool-placeholder {
     display: none;
-    height: 100%;
 }
 
 #ai-chat.tool-placeholder.active {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
 }
 
 #ai-chat.tool-placeholder.active .placeholder-header {
     padding: var(--spacing-lg) var(--spacing-lg) 0;
+}
+
+/* 4 AI generation tools - same flex layout as chat */
+#ai-image.tool-placeholder,
+#ai-video.tool-placeholder,
+#ai-model.tool-placeholder,
+#ai-audio.tool-placeholder {
+    display: none;
+}
+
+#ai-image.tool-placeholder.active,
+#ai-video.tool-placeholder.active,
+#ai-model.tool-placeholder.active,
+#ai-audio.tool-placeholder.active {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .chat-tool-ui {
@@ -2567,8 +2566,7 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 0;
-    padding: var(--spacing-lg);
-    padding-top: var(--spacing-md);
+    padding: 4px;
 }
 
 .chat-layout {
@@ -2685,8 +2683,33 @@ body {
     background: rgba(239, 68, 68, 0.12);
 }
 
+.chat-history-rename {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+    flex-shrink: 0;
+    opacity: 0.7;
+    transition: opacity var(--transition-fast);
+}
+
+.chat-history-item:hover .chat-history-rename {
+    display: block;
+}
+
+.chat-history-rename:hover {
+    opacity: 1;
+    color: var(--color-accent-blue);
+    background: rgba(59, 130, 246, 0.12);
+}
+
 .chat-main {
     flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -2695,6 +2718,7 @@ body {
 
 .chat-messages {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: var(--spacing-lg);
     display: flex;
@@ -2854,6 +2878,7 @@ body {
 }
 
 .chat-input-area {
+    flex-shrink: 0;
     display: flex;
     align-items: flex-end;
     gap: var(--spacing-sm);
@@ -2894,49 +2919,66 @@ body {
     align-self: flex-end;
 }
 
-.chat-model-bar {
+/* Config bar below input */
+.chat-config-bar {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: var(--spacing-sm) var(--spacing-md);
+    gap: var(--spacing-sm);
+    padding: 6px var(--spacing-md);
     border-top: 1px solid var(--color-border);
     background: var(--color-bg-secondary);
     min-height: 34px;
 }
 
-.chat-model-label {
-    font-size: 0.8125rem;
+.chat-config-label {
+    font-size: 0.72rem;
     color: var(--color-text-tertiary);
+    flex-shrink: 0;
 }
 
-.chat-model-selectors {
-    display: flex;
-    gap: var(--spacing-sm);
-    margin-left: auto;
-}
-
-.chat-model-selectors select {
+.chat-config-select {
     background: var(--color-bg-tertiary);
     color: var(--color-text-primary);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
-    padding: var(--spacing-sm) var(--spacing-md);
-    font-size: 0.875rem;
+    padding: 4px 8px;
+    font-size: 0.75rem;
     font-family: inherit;
     cursor: pointer;
     outline: none;
     transition: all var(--transition-fast);
-    max-width: 160px;
+    min-width: 100px;
+    max-width: 140px;
 }
 
-.chat-model-selectors select:focus {
+.chat-config-select:focus {
     border-color: var(--color-active);
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
-.chat-model-selectors select:disabled {
+.chat-config-select:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.chat-config-number {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-family: inherit;
+    outline: none;
+    width: 52px;
+    text-align: center;
+    transition: all var(--transition-fast);
+}
+
+.chat-config-number:focus {
+    border-color: var(--color-active);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 .chat-setup-prompt {
@@ -2986,6 +3028,73 @@ body {
     .chat-bubble {
         max-width: 95%;
     }
+}
+
+/* Scroll-to-bottom button */
+.scroll-bottom-btn {
+    position: sticky;
+    bottom: var(--spacing-md);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    z-index: 10;
+    margin: 0 auto;
+    transition: all var(--transition-fast);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.scroll-bottom-btn.visible {
+    display: flex;
+}
+
+.scroll-bottom-btn:hover {
+    background: var(--color-active);
+    color: #fff;
+    border-color: var(--color-active);
+}
+
+/* Code copy button */
+.code-copy-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+    padding: 2px 8px;
+    font-size: 0.7rem;
+    font-family: inherit;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.chat-bubble-content pre {
+    position: relative;
+}
+
+.chat-bubble-content pre:hover .code-copy-btn {
+    opacity: 1;
+}
+
+.code-copy-btn:hover {
+    color: var(--color-text-primary);
+    border-color: var(--color-active);
+}
+
+.code-copy-btn.copied {
+    color: var(--color-accent-green);
 }
 
 /* ========== Settings AI Config ========== */
@@ -3171,4 +3280,76 @@ body {
 .settings-ai-add-model .settings-text-input {
     font-size: 0.8125rem;
     padding: 4px 8px;
+}
+
+/* ========== AI Generation Tool Shared Styles ========== */
+
+.ai-gen-textarea {
+    flex: 1;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    color: var(--color-text-primary);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.875rem;
+    resize: vertical;
+    outline: none;
+    line-height: 1.5;
+    transition: all var(--transition-fast);
+    min-height: 60px;
+}
+
+.ai-gen-textarea:focus {
+    border-color: var(--color-active);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.ai-gen-progress {
+    margin-top: var(--spacing-sm);
+}
+
+.ai-gen-result-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+}
+
+.ai-gen-result-item {
+    position: relative;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-tertiary);
+    transition: border-color var(--transition-fast);
+}
+
+.ai-gen-result-item:hover {
+    border-color: var(--color-active);
+}
+
+.ai-gen-result-item img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    cursor: pointer;
+    display: block;
+}
+
+.ai-gen-dl-btn {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    width: 30px;
+    height: 30px;
+    padding: 0 !important;
+    border-radius: var(--radius-sm);
+    justify-content: center !important;
+    opacity: 0.7;
+    font-size: 0.75rem !important;
+}
+
+.ai-gen-result-item:hover .ai-gen-dl-btn {
+    opacity: 1;
 }

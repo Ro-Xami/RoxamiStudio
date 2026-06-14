@@ -9,5 +9,53 @@
                 { "id": "deepseek-v4-flash", "name": "deepseek-v4-flash" }
             ]
         }
-    ]
+    ],
+    "aiImage": {
+        "providers": [
+            {
+                "name": "OpenAI",
+                "baseUrl": "https://api.openai.com/v1",
+                "apiKey": "",
+                "models": [
+                    { "id": "dall-e-3", "name": "DALL-E 3" }
+                ]
+            }
+        ]
+    },
+    "aiVideo": {
+        "providers": [
+            {
+                "name": "OpenAI",
+                "baseUrl": "https://api.openai.com/v1",
+                "apiKey": "",
+                "models": [
+                    { "id": "sora-2", "name": "Sora 2" }
+                ]
+            }
+        ]
+    },
+    "aiModel": {
+        "providers": [
+            {
+                "name": "Meshy",
+                "baseUrl": "https://api.meshy.ai",
+                "apiKey": "",
+                "models": [
+                    { "id": "meshy-4", "name": "Meshy 4" }
+                ]
+            }
+        ]
+    },
+    "aiAudio": {
+        "providers": [
+            {
+                "name": "OpenAI",
+                "baseUrl": "https://api.openai.com/v1",
+                "apiKey": "",
+                "models": [
+                    { "id": "tts-1", "name": "TTS-1" }
+                ]
+            }
+        ]
+    }
 }

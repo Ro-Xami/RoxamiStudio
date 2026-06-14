@@ -15,10 +15,6 @@ const translations = {
         'threeDConverterDesc': '转换 GLB 到 OBJ',
         'addTool': '添加工具',
 
-        // Breadcrumb
-        'breadcrumbTools': '工具',
-        'currentTool': '3D 转换器',
-
         // Tool actions
         'save': '保存',
         'reset': '重置',
@@ -157,9 +153,18 @@ const translations = {
         'aiChat': 'AI 对话',
         'aiChatDesc': '多模型 AI 聊天助手',
 
+        'aiImage': 'AI 图片',
+        'aiImageDesc': '文本生成图片',
+        'aiVideo': 'AI 视频',
+        'aiVideoDesc': '文本生成视频',
+        'aiModel': 'AI 模型',
+        'aiModelDesc': '文本生成 3D 模型',
+        'aiAudio': 'AI 音频',
+        'aiAudioDesc': '文本生成语音',
+
         // Footer
         'footerText': '所有处理均在您的浏览器中进行。数据不会发送到服务器。',
-        'copyright': '© 2026 Roxami Studio',
+        'copyright': '所有处理均在您的浏览器和本地中进行，相关数据存储在本地 settings.json 中。',
         'help': '帮助',
         'reportIssue': '报告问题',
         'github': 'GitHub',
@@ -214,10 +219,13 @@ document.addEventListener('DOMContentLoaded', function() {
     initBlueprint();
     initBgRemover();
     initAiChat();
+    initAiImage();
+    initAiVideo();
+    initAiModel();
+    initAiAudio();
     initLanguageToggle();
 
     // Set initial active tool
-    updateCurrentToolName();
 });
 
 // Tool Switcher Module
@@ -245,9 +253,6 @@ function initToolSwitcher() {
             if (selectedTool) {
                 selectedTool.classList.add('active');
             }
-
-            // Update breadcrumb
-            updateCurrentToolName();
 
             // Apply translations to the newly shown tool
             if (currentLanguage !== 'en') {
@@ -280,14 +285,6 @@ function initToolSwitcher() {
             }
         });
     });
-}
-
-function updateCurrentToolName() {
-    const activeToolItem = document.querySelector('.tool-item.active');
-    if (activeToolItem) {
-        const toolName = activeToolItem.querySelector('.tool-info h3').textContent;
-        document.getElementById('current-tool-name').textContent = toolName;
-    }
 }
 
 // Restart Button Module
@@ -601,6 +598,18 @@ function applyTranslations(language) {
         } else if (toolId === 'ai-chat' && titleElement && descElement) {
             titleElement.textContent = preserveProperNouns(langData.aiChat);
             descElement.textContent = preserveProperNouns(langData.aiChatDesc);
+        } else if (toolId === 'ai-image' && titleElement && descElement) {
+            titleElement.textContent = preserveProperNouns(langData.aiImage);
+            descElement.textContent = preserveProperNouns(langData.aiImageDesc);
+        } else if (toolId === 'ai-video' && titleElement && descElement) {
+            titleElement.textContent = preserveProperNouns(langData.aiVideo);
+            descElement.textContent = preserveProperNouns(langData.aiVideoDesc);
+        } else if (toolId === 'ai-model' && titleElement && descElement) {
+            titleElement.textContent = preserveProperNouns(langData.aiModel);
+            descElement.textContent = preserveProperNouns(langData.aiModelDesc);
+        } else if (toolId === 'ai-audio' && titleElement && descElement) {
+            titleElement.textContent = preserveProperNouns(langData.aiAudio);
+            descElement.textContent = preserveProperNouns(langData.aiAudioDesc);
         }
     });
 
@@ -609,13 +618,6 @@ function applyTranslations(language) {
     if (addToolBtn) {
         addToolBtn.innerHTML = `<i class="fas fa-plus-circle"></i> ${preserveProperNouns(langData.addTool)}`;
     }
-
-    // Breadcrumb
-    const breadcrumbTools = document.querySelector('.breadcrumb span:first-child');
-    if (breadcrumbTools) breadcrumbTools.textContent = preserveProperNouns(langData.breadcrumbTools);
-
-    // Current tool name will be updated by updateCurrentToolName()
-    updateCurrentToolName();
 
     // Tool actions (title attributes)
     const saveBtn = document.querySelector('.action-btn[title="Save"]');
@@ -654,7 +656,7 @@ function applyTranslations(language) {
     }
 
     const copyright = document.querySelector('.footer-content p');
-    if (copyright) copyright.textContent = preserveProperNouns(langData.copyright);
+    if (copyright) copyright.innerHTML = `<i class="fas fa-lock" style="font-size:0.7rem;opacity:0.6;"></i> ${preserveProperNouns(langData.copyright)}`;
 
     const footerLinks = document.querySelectorAll('.footer-links a');
     if (footerLinks.length >= 4) {
@@ -1064,70 +1066,6 @@ function preserveProperNouns(text) {
         result = result.replace(regex, noun);
     });
     return result;
-}
-
-// Update current tool name when switching tools
-function updateCurrentToolName() {
-    const activeToolItem = document.querySelector('.tool-item.active');
-    if (activeToolItem) {
-        const toolId = activeToolItem.getAttribute('data-tool');
-        const currentToolNameElement = document.getElementById('current-tool-name');
-
-        if (currentToolNameElement) {
-            const langData = translations[currentLanguage];
-            if (!langData) return;
-
-            let toolName = '';
-            switch (toolId) {
-                case 'json-formatter':
-                    toolName = langData.jsonFormatter;
-                    break;
-                case 'base64-converter':
-                    toolName = langData.base64Converter;
-                    break;
-                case 'url-encoder':
-                    toolName = langData.urlEncoder;
-                    break;
-                case 'hash-generator':
-                    toolName = langData.hashGenerator;
-                    break;
-                case 'timestamp-converter':
-                    toolName = langData.timestampConverter;
-                    break;
-                case 'color-picker':
-                    toolName = langData.colorPicker;
-                    break;
-                case '3d-converter':
-                    toolName = langData.threeDConverter;
-                    break;
-                case 'video-frame-extractor':
-                    toolName = langData.videoFrameExtractor;
-                    break;
-                case 'file-renamer':
-                    toolName = langData.fileRenamer;
-                    break;
-                case 'sprite-sheet-tool':
-                    toolName = langData.spriteSheetTool;
-                    break;
-                case 'image-flipper':
-                    toolName = langData.imageFlipper;
-                    break;
-                case 'perfect-pixel':
-                    toolName = langData.perfectPixel;
-                    break;
-                case 'blueprint':
-                    toolName = langData.blueprint;
-                    break;
-                case 'ai-chat':
-                    toolName = langData.aiChat;
-                    break;
-                default:
-                    toolName = 'Unknown Tool';
-            }
-
-            currentToolNameElement.textContent = preserveProperNouns(toolName);
-        }
-    }
 }
 
 function enablePreviewZoom(container) {
@@ -1607,6 +1545,10 @@ function initSettingsPanel() {
         })
         .then(function () {
             renderProviderList();
+            AiCore.buildToolSettings('aiImage', 'settings-aiimage-list');
+            AiCore.buildToolSettings('aiVideo', 'settings-aivideo-list');
+            AiCore.buildToolSettings('aiModel', 'settings-aimodel-list');
+            AiCore.buildToolSettings('aiAudio', 'settings-aiaudio-list');
         });
 
     // ============================================================
@@ -1667,7 +1609,15 @@ function initSettingsPanel() {
                 }
             })
             .finally(function() {
-                if (checkUpdateBtn) {
+    // Show current version immediately (independent of update check)
+    fetch('/api/version')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (updateCurrentVer && d.version) updateCurrentVer.textContent = 'v' + d.version;
+        })
+        .catch(function() {});
+
+    if (checkUpdateBtn) {
                     checkUpdateBtn.disabled = false;
                     checkUpdateBtn.innerHTML = '<i class="fas fa-sync-alt"></i> 检查更新';
                 }
