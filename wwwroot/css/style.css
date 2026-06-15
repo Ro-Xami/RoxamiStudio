@@ -3353,3 +3353,39 @@ body {
 .ai-gen-result-item:hover .ai-gen-dl-btn {
     opacity: 1;
 }
+
+/* ========== @ Mention Dropdown ========== */
+.chat-mention-dropdown {
+    position: fixed;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 50;
+    min-width: 220px;
+}
+
+.chat-mention-item {
+    padding: var(--spacing-sm) var(--spacing-md);
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background var(--transition-fast);
+}
+
+.chat-mention-item:hover,
+.chat-mention-item.active {
+    background: var(--color-hover);
+    color: var(--color-text-primary);
+}
+
+.chat-upload-btn {
+    flex-shrink: 0;
+}

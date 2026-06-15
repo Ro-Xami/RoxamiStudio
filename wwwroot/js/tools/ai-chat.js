@@ -150,7 +150,8 @@ function initAiChat() {
             model: null,
             createdAt: Date.now(),
             updatedAt: Date.now(),
-            messages: []
+            messages: [],
+            files: []
         };
         conversations.unshift(conv);
         currentConvId = conv.id;
@@ -656,15 +657,10 @@ function initAiChat() {
         sendBtn.addEventListener('click', sendMessage);
 
         chatInput.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            if (e.key === 'Enter' && !e.shiftKey && mentionDrop.style.display !== 'block') {
                 e.preventDefault();
                 sendMessage();
             }
-        });
-
-        chatInput.addEventListener('input', function () {
-            chatInput.style.height = 'auto';
-            chatInput.style.height = Math.min(chatInput.scrollHeight, 150) + 'px';
         });
 
         newBtn.addEventListener('click', function () {
@@ -680,6 +676,131 @@ function initAiChat() {
 
         providerSelect.addEventListener('change', function () {
             renderModelSelect();
+        });
+
+        var uploadBtn = document.getElementById('ai-chat-upload-btn');
+        var fileInput = document.getElementById('ai-chat-file-input');
+        if (uploadBtn && fileInput) {
+            uploadBtn.addEventListener('click', function () { fileInput.click(); });
+            fileInput.addEventListener('change', function () {
+                var files = fileInput.files;
+                if (!files || files.length === 0) return;
+                for (var fi = 0; fi < files.length; fi++) {
+                    (function (file) {
+                        var reader = new FileReader();
+                        reader.onload = function () {
+                            var base64 = reader.result.split(',')[1];
+                            AiStorage.saveFile('img/chathistory', AiStorage.sanitizeFilename(file.name), base64)
+                                .then(function (path) {
+                                    chatInput.value = chatInput.value + ' @' + path + ' ';
+                                    var conv = getCurrentConversation();
+                                    if (conv) {
+                                        conv.files = conv.files || [];
+                                        conv.files.push({ path: path, name: file.name, type: file.type.startsWith('image') ? 'image' : 'file' });
+                                        saveConversations();
+                                    }
+                                    showNotification('已上传: ' + file.name, 'success');
+                                })
+                                .catch(function (err) {
+                                    showNotification('上传失败: ' + (err.message || 'unknown'), 'error');
+                                });
+                        };
+                        reader.readAsDataURL(file);
+                    })(files[fi]);
+                }
+                fileInput.value = '';
+            });
+        }
+
+        // @ mention dropdown
+        var mentionDrop = document.createElement('div');
+        mentionDrop.className = 'chat-mention-dropdown';
+        mentionDrop.style.display = 'none';
+        document.querySelector('.chat-main').appendChild(mentionDrop);
+
+        function getMentionRange(textarea) {
+            var val = textarea.value;
+            var pos = textarea.selectionStart;
+            var start = val.lastIndexOf('@', pos - 1);
+            if (start === -1) return null;
+            var end = pos;
+            var afterAt = val.substring(start + 1, end);
+            if (afterAt.indexOf(' ') !== -1) return null;
+            return { start: start, end: end, filter: afterAt };
+        }
+
+        function renderMentionDrop(filter) {
+            var conv = getCurrentConversation();
+            var files = conv ? (conv.files || []) : [];
+            mentionDrop.innerHTML = '';
+            var shown = 0;
+            for (var i = 0; i < files.length; i++) {
+                var f = files[i];
+                var text = f.path || f.name || '';
+                if (filter && text.indexOf(filter) === -1) continue;
+                var item = document.createElement('div');
+                item.className = 'chat-mention-item';
+                var icon = document.createElement('span');
+                icon.style.cssText = 'margin-right:6px;opacity:0.5;';
+                icon.textContent = f.type === 'image' ? '🖼' : '📁';
+                item.appendChild(icon);
+                item.appendChild(document.createTextNode(text));
+                item.addEventListener('mousedown', function (ev) { ev.preventDefault(); selectMention(f); });
+                mentionDrop.appendChild(item);
+                shown++;
+            }
+            if (shown === 0) { mentionDrop.style.display = 'none'; return; }
+            mentionDrop.style.display = 'block';
+            var rect = chatInput.getBoundingClientRect();
+            mentionDrop.style.top = (rect.top - 8) + 'px';
+            mentionDrop.style.left = (rect.left + 40) + 'px';
+        }
+
+        function selectMention(file) {
+            var range = getMentionRange(chatInput);
+            if (!range) return;
+            var val = chatInput.value;
+            chatInput.value = val.substring(0, range.start) + file.path + ' ' + val.substring(range.end);
+            chatInput.selectionEnd = range.start + file.path.length + 1;
+            mentionDrop.style.display = 'none';
+            chatInput.focus();
+        }
+
+        chatInput.addEventListener('input', function () {
+            chatInput.style.height = 'auto';
+            chatInput.style.height = Math.min(chatInput.scrollHeight, 150) + 'px';
+            var range = getMentionRange(chatInput);
+            if (range) renderMentionDrop(range.filter);
+            else mentionDrop.style.display = 'none';
+        });
+
+        chatInput.addEventListener('keydown', function (e) {
+            if (mentionDrop.style.display === 'block') {
+                if (e.key === 'Escape') { mentionDrop.style.display = 'none'; e.preventDefault(); return; }
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    var items = mentionDrop.querySelectorAll('.chat-mention-item');
+                    if (items.length === 0) return;
+                    var active = mentionDrop.querySelector('.chat-mention-item.active');
+                    var idx = -1;
+                    for (var k = 0; k < items.length; k++) { if (items[k] === active) { idx = k; break; } }
+                    if (e.key === 'ArrowDown') idx = (idx + 1) % items.length;
+                    else idx = idx <= 0 ? items.length - 1 : idx - 1;
+                    if (active) active.classList.remove('active');
+                    items[idx].classList.add('active');
+                    return;
+                }
+                if (e.key === 'Enter') {
+                    var sel = mentionDrop.querySelector('.chat-mention-item.active');
+                    if (sel) { e.preventDefault(); sel.click(); return; }
+                }
+            }
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!mentionDrop.contains(e.target) && e.target !== chatInput) {
+                mentionDrop.style.display = 'none';
+            }
         });
 
         document.addEventListener('keydown', function (e) {

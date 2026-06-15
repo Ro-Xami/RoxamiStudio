@@ -15,6 +15,7 @@
   <ItemGroup>
     <Content Include="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="BlueprintTemplate\**" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="output\**" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="index.html" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="settings.example.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="ico\roxami_icon.ico" CopyToOutputDirectory="PreserveNewest" />

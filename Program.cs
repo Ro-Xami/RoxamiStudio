@@ -6,6 +6,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 
 class Program
@@ -486,6 +488,12 @@ class Program
         MimeTypes[".woff"]  = "font/woff";
         MimeTypes[".woff2"] = "font/woff2";
         MimeTypes[".ttf"]   = "font/ttf";
+        MimeTypes[".mp4"]   = "video/mp4";
+        MimeTypes[".webm"]  = "video/webm";
+        MimeTypes[".mp3"]   = "audio/mpeg";
+        MimeTypes[".wav"]   = "audio/wav";
+        MimeTypes[".glb"]   = "model/gltf-binary";
+        MimeTypes[".gltf"]  = "model/gltf+json";
 
         Console.Title = "Roxami Studio";
         Console.WriteLine("================================");
@@ -628,6 +636,7 @@ class Program
         if (method == "POST" && path == "api/settings/save") { HandleSettingsSave(stream, body); return; }
         if (method == "GET" && path == "api/conversations/load") { HandleConversationsLoad(stream); return; }
         if (method == "POST" && path == "api/conversations/save") { HandleConversationsSave(stream, body); return; }
+        if (method == "POST" && path == "api/save-file") { HandleSaveFile(stream, body); return; }
 
         ServeFile(stream, path);
         }
@@ -861,10 +870,10 @@ class Program
                 downloaded = true;
                 break;
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine("[Update] Mirror failed: " + ex.Message);
-            }
+        catch (Exception ex)
+        {
+            Console.WriteLine("[Update] Mirror failed: " + ex.Message);
+        }
         }
 
         if (downloaded)
@@ -999,6 +1008,50 @@ class Program
         {
             Send(stream, 500, "{\"error\":\"" + JsonEscape(ex.Message) + "\"}", "application/json; charset=utf-8");
         }
+    }
+
+    static void HandleSaveFile(NetworkStream stream, string body)
+    {
+        if (string.IsNullOrEmpty(body))
+        {
+            Send(stream, 400, "{\"error\":\"Empty body\"}", "application/json; charset=utf-8");
+            return;
+        }
+        try
+        {
+            var opt = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var req = JsonSerializer.Deserialize<SaveFileRequest>(body, opt);
+            if (req == null || string.IsNullOrEmpty(req.Path) || string.IsNullOrEmpty(req.Data))
+            {
+                Send(stream, 400, "{\"error\":\"Missing path or data\"}", "application/json; charset=utf-8");
+                return;
+            }
+
+            string outputDir = Path.Combine(BaseDir, "output");
+            string fullPath = Path.GetFullPath(Path.Combine(outputDir, req.Path));
+            if (!fullPath.StartsWith(outputDir, StringComparison.OrdinalIgnoreCase))
+            {
+                Send(stream, 403, "{\"error\":\"Path traversal blocked\"}", "application/json; charset=utf-8");
+                return;
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+            byte[] data = Convert.FromBase64String(req.Data);
+            File.WriteAllBytes(fullPath, data);
+
+            var result = new { ok = true, path = req.Path, size = data.Length };
+            Send(stream, 200, System.Text.Json.JsonSerializer.Serialize(result), "application/json; charset=utf-8");
+        }
+        catch (Exception ex)
+        {
+            Send(stream, 500, "{\"error\":\"" + JsonEscape(ex.Message) + "\"}", "application/json; charset=utf-8");
+        }
+    }
+
+    private class SaveFileRequest
+    {
+        public string? Path { get; set; }
+        public string? Data { get; set; }
     }
 
     static void SendSSEMsg(NetworkStream stream, string type, string data)

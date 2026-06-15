@@ -25,6 +25,8 @@ var AiGenChat = (function () {
         var chatInput = container.querySelector('.chat-input');
         var sendBtn = container.querySelector('.chat-send-btn');
         var configBar = container.querySelector('.chat-config-bar');
+        var uploadBtn = container.querySelector('.chat-upload-btn');
+        var fileInput = container.querySelector('.chat-file-input');
         var configEls = {};
 
         var config = null;
@@ -39,6 +41,56 @@ var AiGenChat = (function () {
         function genId() { return 'g_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
         function escHtml(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
         function notify(m, t) { AiCore.showNotification(m, t || 'info'); }
+
+        function b64ToBlobUrl(b64, mime) {
+            try {
+                var byteChars = atob(b64);
+                var byteNums = new Array(byteChars.length);
+                for (var j = 0; j < byteChars.length; j++) byteNums[j] = byteChars.charCodeAt(j);
+                var byteArr = new Uint8Array(byteNums);
+                var blob = new Blob([byteArr], { type: mime || 'image/png' });
+                return URL.createObjectURL(blob);
+            } catch (e) { return null; }
+        }
+
+        function extractRefPaths(text) {
+            var conv = getCurrent();
+            if (!conv || !conv.files || conv.files.length === 0) return [];
+            var paths = [];
+            var re = /@(\S+)/g;
+            var match;
+            while ((match = re.exec(text)) !== null) {
+                var ref = match[1];
+                for (var i = 0; i < conv.files.length; i++) {
+                    var f = conv.files[i];
+                    if (f.path === ref || f.path.endsWith('/' + ref) || f.path.indexOf(ref) !== -1) {
+                        paths.push(f.path);
+                        break;
+                    }
+                }
+            }
+            return paths;
+        }
+
+        function resolveRefImages(paths) {
+            if (!paths || paths.length === 0) return Promise.resolve([]);
+            var promises = paths.map(function (p) {
+                return fetch(AiStorage.fileUrl(p))
+                    .then(function (r) { return r.blob(); })
+                    .then(function (blob) {
+                        return new Promise(function (resolve, reject) {
+                            var reader = new FileReader();
+                            reader.onload = function () { resolve(reader.result); };
+                            reader.onerror = reject;
+                            reader.readAsDataURL(blob);
+                        });
+                    })
+                    .catch(function () { return null; });
+            });
+            return Promise.all(promises).then(function (results) {
+                return results.filter(function (r) { return r !== null; });
+            });
+        }
 
         function loadConvs() {
             try {
@@ -58,7 +110,7 @@ var AiGenChat = (function () {
             return null;
         }
         function createConv() {
-            var c = { id: genId(), title: '新对话', renamed: false, createdAt: Date.now(), updatedAt: Date.now(), messages: [] };
+            var c = { id: genId(), title: '新对话', renamed: false, createdAt: Date.now(), updatedAt: Date.now(), messages: [], files: [] };
             conversations.unshift(c);
             currentConvId = c.id;
             saveConvs();
@@ -164,6 +216,12 @@ var AiGenChat = (function () {
                     var media = renderMedia(msg.type, msg.resultUrl, msg.meta);
                     if (media) { var wrap = document.createElement('div'); wrap.appendChild(media); content.appendChild(wrap); }
                 }
+                if (msg.resultUrls) {
+                    for (var mi = 0; mi < msg.resultUrls.length; mi++) {
+                        var media = renderMedia(msg.type || 'image', msg.resultUrls[mi].url, msg.meta);
+                        if (media) { var wrap = document.createElement('div'); wrap.appendChild(media); content.appendChild(wrap); }
+                    }
+                }
                 content.innerHTML = enhanceHtml(content.innerHTML);
             }
 
@@ -208,6 +266,43 @@ var AiGenChat = (function () {
 
         function scrollBottom() { messagesArea.scrollTop = messagesArea.scrollHeight; }
 
+        function getControlsForProvider(provider) {
+            if (typeof opts.getExtraControls === 'function') return opts.getExtraControls(provider) || [];
+            return opts.extraControls || [];
+        }
+
+        function renderExtraControls() {
+            var container = document.getElementById('aigen-extra-controls');
+            if (!container) return;
+            container.innerHTML = '';
+            // Clear old configEls for extra controls
+            var controls = getControlsForProvider(activeProvider);
+            for (var k = 0; k < controls.length; k++) {
+                delete configEls[controls[k].id];
+            }
+            for (var k = 0; k < controls.length; k++) {
+                (function (ctrl) {
+                    var label = document.createElement('span');
+                    label.className = 'chat-config-label'; label.textContent = ctrl.label;
+                    container.appendChild(label);
+                    var el;
+                    if (ctrl.type === 'select') {
+                        el = document.createElement('select'); el.className = 'chat-config-select';
+                        var options = ctrl.options || [];
+                        for (var oi = 0; oi < options.length; oi++) {
+                            var o = document.createElement('option'); o.value = options[oi]; o.textContent = options[oi]; el.appendChild(o);
+                        }
+                        if (ctrl.value) el.value = ctrl.value;
+                    } else if (ctrl.type === 'number') {
+                        el = document.createElement('input'); el.type = 'number'; el.className = 'chat-config-number';
+                        el.value = ctrl.value || 1; el.min = ctrl.min || 1; el.max = ctrl.max || 10;
+                    }
+                    container.appendChild(el);
+                    configEls[ctrl.id] = el;
+                })(controls[k]);
+            }
+        }
+
         function renderConfigBar() {
             configBar.innerHTML = '';
             if (!config || !config.providers || config.providers.length === 0) return;
@@ -224,6 +319,7 @@ var AiGenChat = (function () {
             psel.addEventListener('change', function () {
                 activeProvider = config.providers[parseInt(psel.value)] || null;
                 renderModelSelect();
+                renderExtraControls();
             });
             configBar.appendChild(psel);
 
@@ -237,30 +333,12 @@ var AiGenChat = (function () {
             activeProvider = config.providers[0];
             renderModelSelect();
 
-            // Extra controls
-            if (opts.extraControls) {
-                for (var k = 0; k < opts.extraControls.length; k++) {
-                    (function (ctrl) {
-                        var label = document.createElement('span');
-                        label.className = 'chat-config-label'; label.textContent = ctrl.label;
-                        configBar.appendChild(label);
-                        var el;
-                        if (ctrl.type === 'select') {
-                            el = document.createElement('select'); el.className = 'chat-config-select';
-                            var options = ctrl.options || [];
-                            for (var oi = 0; oi < options.length; oi++) {
-                                var o = document.createElement('option'); o.value = options[oi]; o.textContent = options[oi]; el.appendChild(o);
-                            }
-                            if (ctrl.value) el.value = ctrl.value;
-                        } else if (ctrl.type === 'number') {
-                            el = document.createElement('input'); el.type = 'number'; el.className = 'chat-config-number';
-                            el.value = ctrl.value || 1; el.min = ctrl.min || 1; el.max = ctrl.max || 10;
-                        }
-                        configBar.appendChild(el);
-                        configEls[ctrl.id] = el;
-                    })(opts.extraControls[k]);
-                }
-            }
+            // Extra controls container (dynamically rendered)
+            var extraContainer = document.createElement('div');
+            extraContainer.id = 'aigen-extra-controls';
+            extraContainer.style.cssText = 'display:flex;align-items:center;gap:var(--spacing-sm);';
+            configBar.appendChild(extraContainer);
+            renderExtraControls();
         }
 
         function renderModelSelect() {
@@ -281,12 +359,11 @@ var AiGenChat = (function () {
 
         function collectControls() {
             var ctrl = {};
-            if (opts.extraControls) {
-                for (var k = 0; k < opts.extraControls.length; k++) {
-                    var cid = opts.extraControls[k].id;
-                    var el = configEls[cid];
-                    if (el) ctrl[cid] = el.value;
-                }
+            var controls = getControlsForProvider(activeProvider);
+            for (var k = 0; k < controls.length; k++) {
+                var cid = controls[k].id;
+                var el = configEls[cid];
+                if (el) ctrl[cid] = el.value;
             }
             return ctrl;
         }
@@ -311,14 +388,18 @@ var AiGenChat = (function () {
             chatInput.value = ''; chatInput.style.height = 'auto';
 
             var ctrlVals = collectControls();
-            var body = opts.buildBody ? opts.buildBody(text, model, ctrlVals) : { model: model, prompt: text };
-            var url = (activeProvider.baseUrl || '').replace(/\/+$/, '') + (opts.endpoint || '');
+            var refPaths = extractRefPaths(text);
 
             addStreamingBubble();
             isBusy = true; sendBtn.disabled = true; chatInput.disabled = true;
             abortCtrl = new AbortController();
 
-            AiCore.callApi(url, activeProvider.apiKey, body, { signal: abortCtrl.signal })
+            resolveRefImages(refPaths).then(function (refImageUris) {
+                var body = opts.buildBody ? opts.buildBody(text, model, ctrlVals, activeProvider, refImageUris) : { model: model, prompt: text };
+                var url = (activeProvider.baseUrl || '').replace(/\/+$/, '') + (opts.endpoint || '');
+
+                return AiCore.callApi(url, activeProvider.apiKey, body, { signal: abortCtrl.signal });
+            })
                 .then(function (data) {
                     removeStreamingBubble();
                     var result = null;
@@ -346,24 +427,65 @@ var AiGenChat = (function () {
                     if (result.error) {
                         msg.content = '生成失败: ' + result.error;
                         msg._html = '<p style="color:var(--color-accent-red)">' + escHtml(msg.content) + '</p>';
-                    } else {
-                        var resUrl = result.url || (result.urls && result.urls.length ? result.urls[0].url || result.urls[0].b64_json || '' : '');
-                        if (result.urls && result.urls.length > 1) {
-                            msg._html = '<p>生成了 ' + result.urls.length + ' 张图片：</p>';
-                            msg.resultUrls = result.urls;
-                        } else {
-                            msg.resultUrl = resUrl;
-                            msg.meta = result;
-                        }
-                        if (resUrl && resUrl.startsWith('blob:')) msg.resultUrl = resUrl;
+                        conv.messages.push(msg);
+                        conv.updatedAt = Date.now();
+                        saveConvs();
+                        renderAll();
+                        isBusy = false; sendBtn.disabled = false; chatInput.disabled = false;
+                        abortCtrl = null;
+                        chatInput.focus();
+                        return;
                     }
-                    conv.messages.push(msg);
-                    conv.updatedAt = Date.now();
-                    saveConvs();
-                    renderAll();
-                    isBusy = false; sendBtn.disabled = false; chatInput.disabled = false;
-                    abortCtrl = null;
-                    chatInput.focus();
+
+                    var resUrl = result.url || (result.urls && result.urls.length ? result.urls[0].url || result.urls[0].b64_json || '' : '');
+                    if (resUrl && !resUrl.startsWith('http') && !resUrl.startsWith('blob:') && !resUrl.startsWith('/') && resUrl.length > 50) {
+                        resUrl = b64ToBlobUrl(resUrl, 'image/png') || resUrl;
+                    }
+                    if (result.urls && result.urls.length > 1) {
+                        msg._html = '<p>生成了 ' + result.urls.length + ' 张图片：</p>';
+                        msg.resultUrls = result.urls.map(function (u) {
+                            var uUrl = u.url || u.b64_json || '';
+                            if (u.b64_json && !u.url) uUrl = b64ToBlobUrl(u.b64_json, 'image/png') || uUrl;
+                            return { url: uUrl };
+                        });
+                    } else {
+                        msg.resultUrl = resUrl;
+                        msg.meta = result;
+                    }
+                    if (resUrl && resUrl.startsWith('blob:')) msg.resultUrl = resUrl;
+
+                    // Save to local storage
+                    var saveDir = 'img/ai-image';
+                    if (opts.resultType === 'video') saveDir = 'video/ai-video';
+                    else if (opts.resultType === 'model') saveDir = 'models/ai-model';
+                    else if (opts.resultType === 'audio') saveDir = 'audio/ai-audio';
+
+                    var ext = opts.resultType === 'video' ? 'mp4' : (opts.resultType === 'audio' ? 'mp3' : (opts.resultType === 'model' ? 'glb' : 'png'));
+                    var saveUrl = resUrl && !resUrl.startsWith('blob:') && !resUrl.startsWith('data:') ? resUrl : null;
+
+                    function finalizeMsg(localPath) {
+                        if (localPath) {
+                            msg.localPath = localPath;
+                            msg.resultUrl = AiStorage.fileUrl(localPath);
+                            conv.files = conv.files || [];
+                            conv.files.push({ path: localPath, name: localPath.split('/').pop(), type: opts.resultType || 'image' });
+                        }
+                        conv.messages.push(msg);
+                        conv.updatedAt = Date.now();
+                        saveConvs();
+                        renderAll();
+                        isBusy = false; sendBtn.disabled = false; chatInput.disabled = false;
+                        abortCtrl = null;
+                        chatInput.focus();
+                    }
+
+                    if (saveUrl) {
+                        AiStorage.saveUrl(saveDir, 'generated.' + ext, saveUrl)
+                            .then(function (localPath) { finalizeMsg(localPath); })
+                            .catch(function () { finalizeMsg(null); });
+                    } else {
+                        finalizeMsg(null);
+                    }
                 })
                 .catch(function (err) {
                     removeStreamingBubble();
@@ -396,10 +518,134 @@ var AiGenChat = (function () {
 
         function setupUI() {
             sendBtn.addEventListener('click', send);
-            chatInput.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
-            chatInput.addEventListener('input', function () { chatInput.style.height = 'auto'; chatInput.style.height = Math.min(chatInput.scrollHeight, 150) + 'px'; });
+            chatInput.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && mentionDrop.style.display !== 'block') { e.preventDefault(); send(); } });
+
+            // @ mention dropdown
+            var mentionDrop = document.createElement('div');
+            mentionDrop.className = 'chat-mention-dropdown';
+            mentionDrop.style.display = 'none';
+            container.querySelector('.chat-main').appendChild(mentionDrop);
+
+            function getMentionRange(textarea) {
+                var val = textarea.value;
+                var pos = textarea.selectionStart;
+                var start = val.lastIndexOf('@', pos - 1);
+                if (start === -1) return null;
+                var end = pos;
+                // check: after @ there should be no spaces until cursor
+                var afterAt = val.substring(start + 1, end);
+                if (afterAt.indexOf(' ') !== -1) return null;
+                return { start: start, end: end, filter: afterAt };
+            }
+
+            function renderMentionDrop(filter) {
+                var conv = getCurrent();
+                var files = conv ? (conv.files || []) : [];
+                mentionDrop.innerHTML = '';
+                var shown = 0;
+                for (var i = 0; i < files.length; i++) {
+                    var f = files[i];
+                    var text = f.path || f.name || '';
+                    if (filter && text.indexOf(filter) === -1) continue;
+                    var item = document.createElement('div');
+                    item.className = 'chat-mention-item';
+                    var icon = document.createElement('span');
+                    icon.style.cssText = 'margin-right:6px;opacity:0.5;';
+                    icon.textContent = f.type === 'image' ? '🖼' : f.type === 'video' ? '🎬' : '📁';
+                    item.appendChild(icon);
+                    item.appendChild(document.createTextNode(text));
+                    item.addEventListener('mousedown', function (ev) { ev.preventDefault(); selectMention(f); });
+                    mentionDrop.appendChild(item);
+                    shown++;
+                }
+                if (shown === 0) { mentionDrop.style.display = 'none'; return; }
+                mentionDrop.style.display = 'block';
+                var rect = chatInput.getBoundingClientRect();
+                mentionDrop.style.top = (rect.top - 8) + 'px';
+                mentionDrop.style.left = (rect.left + 40) + 'px';
+            }
+
+            function selectMention(file) {
+                var range = getMentionRange(chatInput);
+                if (!range) return;
+                var val = chatInput.value;
+                chatInput.value = val.substring(0, range.start) + file.path + ' ' + val.substring(range.end);
+                chatInput.selectionEnd = range.start + file.path.length + 1;
+                mentionDrop.style.display = 'none';
+                chatInput.focus();
+            }
+
+            chatInput.addEventListener('input', function () {
+                chatInput.style.height = 'auto';
+                chatInput.style.height = Math.min(chatInput.scrollHeight, 150) + 'px';
+                var range = getMentionRange(chatInput);
+                if (range) renderMentionDrop(range.filter);
+                else mentionDrop.style.display = 'none';
+            });
+
+            chatInput.addEventListener('keydown', function (e) {
+                if (mentionDrop.style.display === 'block') {
+                    if (e.key === 'Escape') { mentionDrop.style.display = 'none'; e.preventDefault(); return; }
+                    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        var items = mentionDrop.querySelectorAll('.chat-mention-item');
+                        if (items.length === 0) return;
+                        var active = mentionDrop.querySelector('.chat-mention-item.active');
+                        var idx = -1;
+                        for (var k = 0; k < items.length; k++) { if (items[k] === active) { idx = k; break; } }
+                        if (e.key === 'ArrowDown') idx = (idx + 1) % items.length;
+                        else idx = idx <= 0 ? items.length - 1 : idx - 1;
+                        if (active) active.classList.remove('active');
+                        items[idx].classList.add('active');
+                        return;
+                    }
+                    if (e.key === 'Enter') {
+                        var sel = mentionDrop.querySelector('.chat-mention-item.active');
+                        if (sel) { e.preventDefault(); sel.click(); return; }
+                    }
+                }
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!mentionDrop.contains(e.target) && e.target !== chatInput) {
+                    mentionDrop.style.display = 'none';
+                }
+            });
             newBtn.addEventListener('click', function () { if (isBusy && !confirm('正在生成，确认新建？')) return; if (abortCtrl) abortCtrl.abort(); isBusy = false; sendBtn.disabled = false; chatInput.disabled = false; createConv(); });
             document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && isBusy && abortCtrl) { abortCtrl.abort(); notify('已取消', 'warning'); } });
+
+            if (uploadBtn && fileInput) {
+                uploadBtn.addEventListener('click', function () { fileInput.click(); });
+                fileInput.addEventListener('change', function () {
+                    var files = fileInput.files;
+                    if (!files || files.length === 0) return;
+                    for (var fi = 0; fi < files.length; fi++) {
+                        (function (file) {
+                            var reader = new FileReader();
+                            reader.onload = function () {
+                                var base64 = reader.result.split(',')[1];
+                                var dir = opts.resultType === 'video' ? 'img/ai-video' : (opts.resultType === 'model' ? 'img/ai-model' : (opts.resultType === 'audio' ? 'img/ai-audio' : 'img/ai-image'));
+                                AiStorage.saveFile(dir, AiStorage.sanitizeFilename(file.name), base64)
+                                    .then(function (path) {
+                                        chatInput.value = chatInput.value + ' @' + path + ' ';
+                                        var conv = getCurrent();
+                                        if (conv) {
+                                            conv.files = conv.files || [];
+                                            conv.files.push({ path: path, name: file.name, type: file.type.startsWith('image') ? 'image' : 'file' });
+                                            saveConvs();
+                                        }
+                                        notify('已上传: ' + file.name, 'success');
+                                    })
+                                    .catch(function (err) {
+                                        notify('上传失败: ' + (err.message || 'unknown'), 'error');
+                                    });
+                            };
+                            reader.readAsDataURL(file);
+                        })(files[fi]);
+                    }
+                    fileInput.value = '';
+                });
+            }
 
             if (scrollBtn) {
                 scrollBtn.addEventListener('click', function () { messagesArea.scrollTop = messagesArea.scrollHeight; });

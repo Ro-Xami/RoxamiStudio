@@ -19,6 +19,16 @@
                 "models": [
                     { "id": "dall-e-3", "name": "DALL-E 3" }
                 ]
+            },
+            {
+                "name": "火山引擎",
+                "baseUrl": "https://ark.cn-beijing.volces.com/api/v3",
+                "apiKey": "",
+                "models": [
+                    { "id": "doubao-seedream-5-0-260128", "name": "Seedream 5.0" },
+                    { "id": "doubao-seedream-4-5-251128", "name": "Seedream 4.5" },
+                    { "id": "doubao-seedream-4-0-250828", "name": "Seedream 4.0" }
+                ]
             }
         ]
     },
