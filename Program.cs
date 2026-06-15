@@ -12,7 +12,7 @@ using System.Threading;
 
 class Program
 {
-    const string AppVersion = "1.0.1";
+    const string AppVersion = "1.0.2";
     const string AppMutexName = "RoxamiStudio_SingleInstance_Mutex";
 
     const string DefaultSettings = """
